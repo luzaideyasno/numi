@@ -4,7 +4,7 @@ import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
   sendPasswordResetEmail, updatePassword } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc,
-  updateDoc, deleteDoc, addDoc, collection, query, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig, STUDENT_DOMAIN } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
@@ -48,6 +48,15 @@ export const NumiDB = {
   logout: () => signOut(auth),
 
   /* ---------- personal del colegio ---------- */
+  // Primera vez: crear la cuenta de coordinación (solo funciona si todavía no existe)
+  async setupDone() { try { return (await getDoc(doc(db, 'config', 'setup'))).exists(); } catch (e) { return true; } },
+  async setupAdmin({ name, email, pw }) {
+    const c = await createUserWithEmailAndPassword(auth, email.trim(), pw);
+    const b = writeBatch(db);
+    b.set(doc(db, 'users', c.user.uid), { role: 'admin', name, email: email.trim(), access: [], created: Date.now() });
+    b.set(doc(db, 'config', 'setup'), { by: c.user.uid, t: Date.now() });
+    await b.commit();
+  },
   staffLogin: (email, pw) => signInWithEmailAndPassword(auth, email.trim(), pw),
   resetPassword: email => sendPasswordResetEmail(auth, email.trim()),
   async me() {

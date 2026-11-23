@@ -235,6 +235,7 @@ function topbar(){const nm=ME_P?ME_P.name:'';return `<header class="bar"><div cl
 
 function render(){
   if(V.screen=='login')return login();
+  if(V.screen=='setup')return setupView();
   if(V.screen=='boot'||V.screen=='loading'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div style="display:grid;place-items:center;gap:12px;text-align:center"><svg viewBox="0 0 120 120" style="width:120px"><use href="#numi"/></svg><div class="spin"></div><p class="muted">${V.screen=='boot'?'Conectando…':'Cargando cursos y notas…'}</p></div></div>`;return}
   if(V.screen=='noaccess'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>Tu cuenta no tiene acceso al panel</h2><p class="muted" style="margin:8px 0 16px">Pide a la coordinación que te cree como profesor en Numi. Si eres la coordinación, revisa que exista el documento <b>users/${esc(DB.user()?.uid||'')}</b> con role "admin" en Firestore.</p><button class="btn" data-a="logout">Salir</button></div></div>`;return}
   if(V.screen=='nodb'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>No se pudo conectar con Firebase</h2><p class="muted" style="margin-top:8px">Abre el panel desde su dirección publicada (GitHub Pages) y revisa la conexión a internet.</p></div></div>`;return}
@@ -252,7 +253,19 @@ function login(){
   <button class="btn" type="submit" ${V.busy?'disabled':''}>${V.busy?'Entrando…':'Entrar'}</button>
   <p style="color:var(--coral);font-weight:700;min-height:1.5em" aria-live="polite">${esc(V.err||'')}</p>
   <button class="link" type="button" data-a="forgot" style="justify-self:start">Olvidé mi contraseña</button>
-  <p class="muted" style="font-size:14px">Las cuentas de profesores las crea la coordinación desde este panel. Te llega un correo para crear tu contraseña.</p></form></div>`;
+  <p class="muted" style="font-size:14px">Las cuentas de profesores las crea la coordinación desde este panel. Te llega un correo para crear tu contraseña.</p>
+  ${V.setupDone===false?`<div class="card" style="background:var(--warn);border:0"><b>¿Es la primera vez que se usa Numi en el colegio?</b><p class="muted" style="font-size:14px;margin:4px 0 10px">Crea aquí la cuenta del coordinador (súper usuario). Esta opción desaparece cuando ya existe.</p><button class="btn sm" type="button" data-a="setup">Crear cuenta del coordinador</button></div>`:''}</form></div>`;
+}
+function setupView(){
+  root.innerHTML=`<div class="login"><div class="art">${NUMI}</div><form id="sf">
+  <h1>Cuenta del coordinador</h1><p class="muted">Será el súper usuario: crea los cursos, los profesores y ve las notas de todo el colegio.</p>
+  <div><label for="sn">Nombre</label><input id="sn" required placeholder="Ej.: Coordinación académica" value="${esc(V.sn||'')}"></div>
+  <div><label for="se">Correo</label><input id="se" type="email" required autocomplete="username" value="${esc(V.se||'')}"></div>
+  <div><label for="sp">Contraseña (mínimo 6 caracteres)</label><input id="sp" type="password" required autocomplete="new-password"></div>
+  <div><label for="sp2">Repite la contraseña</label><input id="sp2" type="password" required autocomplete="new-password"></div>
+  <button class="btn" type="submit" ${V.busy?'disabled':''}>${V.busy?'Creando…':'Crear y entrar'}</button>
+  <p style="color:var(--coral);font-weight:700;min-height:1.5em" aria-live="polite">${esc(V.err||'')}</p>
+  <button class="link" type="button" data-a="tologin" style="justify-self:start">Volver</button></form></div>`;
 }
 async function afterAuth(){
   V.screen='loading';render();
@@ -503,6 +516,14 @@ async function saveStudents(){
   c.students.push(...made);c.students.sort(byName);V.ocr=null;render();
   toast(errors?`Se crearon ${made.length} usuarios. ${errors} no se pudieron crear.`:`¡Listo! Se crearon ${made.length} usuarios. Ya puedes imprimir las tarjetas.`);
 }
+document.addEventListener('submit',async e=>{if(e.target.id!='sf')return;e.preventDefault();
+  V.sn=$('#sn').value.trim();V.se=$('#se').value.trim();const p1=$('#sp').value,p2=$('#sp2').value;
+  if(p1.length<6){V.err='La contraseña debe tener al menos 6 caracteres.';return setupView()}
+  if(p1!==p2){V.err='Las contraseñas no coinciden.';return setupView()}
+  V.busy=true;V.err='';setupView();
+  try{if(await DB.setupDone()){V.busy=false;V.setupDone=true;V.screen='login';V.err='Ya existe una cuenta de coordinación. Entra con ella.';return render()}
+    await DB.setupAdmin({name:V.sn,email:V.se,pw:p1});V.busy=false;V.setupDone=true;await afterAuth();toast('¡Cuenta del coordinador creada!')}
+  catch(err){V.busy=false;V.err=DB.message(err);setupView()}});
 document.addEventListener('submit',async e=>{if(e.target.id!='lf')return;e.preventDefault();
   V.email=$('#em').value.trim();const pw=$('#pw').value;V.busy=true;V.err='';login();
   try{await DB.staffLogin(V.email,pw);V.busy=false;await afterAuth()}catch(err){V.busy=false;V.err=DB.message(err);login()}});
@@ -511,6 +532,8 @@ document.addEventListener('click',async e=>{
   try{
   if(a=='home'){V.screen='home';render();scrollTo(0,0)}
   else if(a=='logout'){await DB.logout();ME_P=null;D.classes=[];V.screen='login';V.err='';render()}
+  else if(a=='setup'){V.screen='setup';V.err='';render()}
+  else if(a=='tologin'){V.screen='login';V.err='';render()}
   else if(a=='forgot'){const em=$('#em').value.trim();if(!em){V.err='Escribe tu correo y vuelve a tocar "Olvidé mi contraseña".';return login()}await DB.resetPassword(em);V.err='';login();toast('Te enviamos un correo para crear una contraseña nueva.')}
   else if(a=='refresh'){V.screen='loading';render();await loadAll();V.screen=V.screen=='loading'?'home':V.screen;V.screen='home';render();toast('Datos actualizados.')}
   else if(a=='cls'){V.cls=+b.dataset.i;V.screen='salon';V.tab='resumen';V.ocr=null;render();scrollTo(0,0)}
@@ -591,6 +614,7 @@ render();
 (async()=>{
   DB=await new Promise(r=>{if(window.NumiDB)return r(window.NumiDB);if(window.NUMIDB_FAIL)return r(null);const t=setTimeout(()=>r(null),8000);addEventListener('numidb',()=>{clearTimeout(t);r(window.NumiDB)},{once:true});addEventListener('numidbfail',()=>{clearTimeout(t);r(null)},{once:true})});
   if(!DB){V.screen='nodb';return render()}
+  V.setupDone=await DB.setupDone();
   const off=DB.onAuth(u=>{off();if(u)afterAuth();else{V.screen='login';render()}});
 })();
 render();

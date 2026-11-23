@@ -16,7 +16,17 @@ service cloud.firestore {
     // Profesores y coordinación
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
-      allow write: if isAdmin();
+      // La primera cuenta de coordinación se crea sola desde el panel, una única vez
+      allow create: if isAdmin() || (signedIn() && request.auth.uid == uid && request.resource.data.role == 'admin'
+        && !exists(/databases/$(db)/documents/config/setup) && existsAfter(/databases/$(db)/documents/config/setup));
+      allow update, delete: if isAdmin();
+    }
+
+    // Marca de que la configuración inicial ya se hizo
+    match /config/setup {
+      allow get: if true;
+      allow create: if signedIn() && !exists(/databases/$(db)/documents/config/setup)
+        && getAfter(/databases/$(db)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Cursos por año lectivo: solo la coordinación los crea o edita

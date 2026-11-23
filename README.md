@@ -21,7 +21,7 @@ Juego de matemáticas para niñas de 3.° a 5.° con retos, ayuda paso a paso y 
 - `settings/{courseId}`: escala de notas del curso. `notes/{studentUid}`: notas ajustadas (`ov`) y observaciones (`obs`). `tasks/{id}`: tareas con fecha límite.
 
 ## Primer uso
-1. Crear al coordinador en Authentication (correo y clave), copiar su UID y crear en Firestore `users/{UID}` con `role: "admin"`, `name` y `email`.
+1. En `docente.html`, tocar **"Crear cuenta del coordinador"** (solo aparece la primera vez) y llenar nombre, correo y contraseña.
 2. El coordinador entra a `docente.html`, crea los cursos del año y los profesores (les llega un correo para crear su contraseña).
 3. Cada profesor crea sus estudiantes desde la foto de la lista (o escribiéndola) e imprime las tarjetas de ingreso.
 
