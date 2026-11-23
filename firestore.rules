@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// Reglas de seguridad de Numi (primera versión).
+// Roles: 'admin' (coordinación / súper usuario) y 'teacher' (profesor).
+// Cada profesor solo puede ver los cursos que tiene en su lista "access".
+// Cada niña solo puede guardar sus propios resultados.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
+    function isAdmin() { return signedIn() && exists(/databases/$(db)/documents/users/$(request.auth.uid)) && profile().role == 'admin'; }
+    function teaches(courseId) {
+      return signedIn() && exists(/databases/$(db)/documents/users/$(request.auth.uid))
+        && profile().role == 'teacher' && courseId in profile().access;
+    }
+
+    // Profesores y coordinación
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Cursos por año lectivo: solo la coordinación los crea o edita
+    match /courses/{courseId} {
+      allow read: if isAdmin() || teaches(courseId);
+      allow write: if isAdmin();
+
+      // Estudiantes del curso: los crea el profesor (desde la foto de la lista) o la coordinación
+      match /students/{studentUid} {
+        allow read: if isAdmin() || teaches(courseId) || (signedIn() && request.auth.uid == studentUid);
+        allow write: if isAdmin() || teaches(courseId);
+      }
+
+      // Resultado de cada reto: lo guarda la niña; lo leen su profesor y la coordinación
+      match /results/{resultId} {
+        allow read: if isAdmin() || teaches(courseId);
+        allow create: if signedIn() && request.resource.data.studentUid == request.auth.uid;
+        allow update, delete: if isAdmin() || teaches(courseId);
+      }
+
+      // Tareas asignadas por el profesor
+      match /tasks/{taskId} {
+        allow read: if signedIn();
+        allow write: if isAdmin() || teaches(courseId);
+      }
+    }
+
+    // Escala de notas y ajustes de cada profesor
+    match /settings/{uid} {
+      allow read, write: if signedIn() && (request.auth.uid == uid || isAdmin());
+    }
+  }
+}

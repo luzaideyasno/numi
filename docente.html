@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Numi — panel docente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: claro y tranquilo, una herramienta de trabajo para profesores, con el cariño de la marca Numi
+   IDEA: la planilla del profesor convertida en tablero: quién jugó, cómo le fue y qué nota lleva
+   PICTURE: el resumen del salón con cifras grandes, barras por isla y la lista de niñas que necesitan apoyo
+   COLOUR and TYPE: blanco y tinta morada oscura, coral como acento, turquesa para lo logrado, amarillo para alertas; Fredoka títulos y Nunito texto
+   LAYOUT: barra superior, pestañas que se desplazan en el celular, tarjetas y tablas que se apilan bajo 600px */
+:root{color-scheme:light dark;
+--bg:light-dark(#f7f4fb,#17132a);--ink:light-dark(#2b1d3a,#f3ecff);--card:light-dark(#fff,#241d3d);--line:light-dark(#e9e1f2,#3a3058);
+--muted:light-dark(#6f6383,#bcaed3);--soft:light-dark(#fbeff3,#3a2846);--coral:#e9456f;--teal:#13998b;--gold:#f2b01e;--blue:#3d8bd9;
+--ok:light-dark(#e3f6f3,#1d4440);--warn:light-dark(#fff4d6,#4a3a17);--bad:light-dark(#fde6ec,#4d2232);
+--s1:8px;--s2:12px;--s3:16px;--s4:24px;--s5:32px;--r:18px}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Fredoka,Nunito,sans-serif;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(30px,6vw,40px)}h2{font-size:clamp(24px,5vw,30px)}h3{font-size:20px}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto;padding-inline:max(4vw,16px)}
+.muted{color:var(--muted)}
+.demo{display:inline-block;background:var(--warn);color:light-dark(#7a5500,#ffd77a);font-weight:700;font-size:13px;border-radius:99px;padding:2px 10px}
+/* barra */
+.bar{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar .wrap{display:flex;align-items:center;gap:var(--s2);min-height:64px}
+.brand{display:flex;align-items:center;gap:8px;font-family:Fredoka,sans-serif;font-weight:700;font-size:21px;margin-right:auto;min-height:44px}
+.brand svg{width:38px;height:38px;flex:none}.brand span{display:grid;line-height:1.05;text-align:left}.brand small{font-family:Nunito,sans-serif;font-weight:700;font-size:13px;color:var(--muted);white-space:nowrap}
+.demo{white-space:nowrap}
+.who{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+.av{width:36px;height:36px;border-radius:50%;background:var(--coral);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border-radius:14px;background:var(--coral);color:#fff;font-weight:800;box-shadow:0 3px 0 #b72f53}
+.btn.alt{background:var(--teal);box-shadow:0 3px 0 #0b6c62}
+.btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:none}
+.btn.sm{min-height:38px;padding:0 12px;font-size:14px;border-radius:12px}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.link{color:var(--coral);font-weight:700;text-decoration:underline;min-height:44px}
+/* ingreso */
+.login{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.login .art{background:#ffc93c;display:grid;place-items:center;padding:var(--s5)}
+.login .art svg{width:min(70%,320px);height:auto}
+.login form{display:grid;align-content:center;gap:var(--s3);padding:var(--s5) max(6vw,20px);max-width:520px;width:100%;justify-self:center}
+label{font-weight:700;font-size:15px;display:block;margin-bottom:6px}
+input,select,textarea{width:100%;font-size:16px;padding:11px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card)}
+textarea{min-height:80px;resize:vertical}
+/* pestañas */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:var(--s2) 0;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;min-height:44px;padding:0 16px;border-radius:99px;font-weight:800;font-size:15px;color:var(--muted);background:var(--card);border:2px solid var(--line)}
+.tab.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+main{padding-block:var(--s3) 64px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s3);flex-wrap:wrap;margin-bottom:var(--s3)}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:700;color:var(--muted)}
+/* tarjetas */
+.grid{display:grid;gap:var(--s3)}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2);margin-bottom:var(--s3)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3) var(--s4)}
+.card>h3{margin-bottom:var(--s2)}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3)}
+.kpi b{display:block;font-family:Fredoka,sans-serif;font-size:clamp(28px,5vw,38px);line-height:1.1;white-space:nowrap}
+.kpi span{font-size:14px;color:var(--muted);font-weight:700}
+.kpi.c1 b{color:var(--coral)}.kpi.c2 b{color:var(--teal)}.kpi.c3 b{color:var(--blue)}.kpi.c4 b{color:light-dark(#b07d00,#ffd77a)}
+.salones{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:var(--s3);margin-top:var(--s4)}
+.salon{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:var(--s4);text-align:left;display:grid;gap:var(--s2)}
+.salon:hover{border-color:var(--coral)}
+.salon .big{font-family:Fredoka,sans-serif;font-size:44px;font-weight:700;color:var(--coral);line-height:1}
+.salon .row3{display:flex;gap:var(--s3);flex-wrap:wrap;font-size:14px;color:var(--muted);font-weight:700}
+.salon .row3 b{color:var(--ink);font-size:18px;display:block}
+/* barras */
+.rows{display:grid;gap:10px}
+.hrow{display:grid;grid-template-columns:122px minmax(0,1fr) 40px;align-items:center;gap:10px;font-weight:700;font-size:15px}
+.track{height:14px;border-radius:9px;background:var(--line);overflow:hidden}
+.track i{display:block;height:100%;border-radius:9px;background:var(--c,var(--teal))}
+.hrow em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+.stackbar{display:flex;height:22px;border-radius:11px;overflow:hidden;margin:var(--s2) 0}
+.stackbar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3);font-size:14px;font-weight:700}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:12px;height:12px;border-radius:4px;display:inline-block}
+/* listas */
+.alert{display:flex;align-items:center;gap:var(--s2);padding:10px 0;border-top:1px solid var(--line);text-align:left;width:100%}
+.alert:first-of-type{border-top:0}
+.alert div{flex:1}.alert b{display:block}.alert small{color:var(--muted);font-size:14px}
+.pill{display:inline-block;border-radius:99px;padding:2px 10px;font-weight:800;font-size:13px;white-space:nowrap}
+.p-ok{background:var(--ok);color:light-dark(#0b6c62,#8ff0e1)}.p-warn{background:var(--warn);color:light-dark(#7a5500,#ffd77a)}.p-bad{background:var(--bad);color:light-dark(#b72f53,#ffb3c7)}.p-n{background:var(--line);color:var(--muted)}
+/* tablas */
+.tools{display:flex;gap:var(--s2);flex-wrap:wrap;margin-bottom:var(--s3)}
+.tools input{flex:1 1 220px;width:auto}.tools select{flex:0 1 220px;width:auto}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--r);overflow:hidden;font-size:15px}
+th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:13px;color:var(--muted);font-weight:800;background:light-dark(#faf7fd,#2a2247)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.click{cursor:pointer}tr.click:hover td{background:light-dark(#fdf7fa,#2c2346)}
+.nota{font-family:Fredoka,sans-serif;font-weight:700;font-size:17px}
+.adj{font-size:11px;font-weight:800;color:var(--coral);display:block}
+/* detalle */
+.qs{display:flex;gap:6px;flex-wrap:wrap}
+.q{display:inline-flex;align-items:center;gap:4px;border-radius:10px;padding:3px 9px;font-weight:800;font-size:13px}
+.q-p{background:var(--ok);color:light-dark(#0b6c62,#8ff0e1)}.q-s{background:light-dark(#e6f0fb,#1f3550);color:light-dark(#22609e,#a9cff5)}
+.q-m{background:var(--warn);color:light-dark(#7a5500,#ffd77a)}.q-a{background:var(--bad);color:light-dark(#b72f53,#ffb3c7)}
+.reto{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px var(--s3);padding:var(--s2) 0;border-top:1px solid var(--line)}
+.reto:first-of-type{border-top:0}.reto small{color:var(--muted)}
+.override{display:flex;gap:6px;align-items:center}.override input{width:76px;padding:6px 8px;text-align:right}
+.isl-list{display:grid}.isl-row{display:flex;align-items:center;gap:var(--s2);padding:10px 0;border-top:1px solid var(--line)}.isl-row:first-child{border-top:0}
+.isl-row div{flex:1}.isl-row b{display:block}.isl-row small{color:var(--muted);font-size:13px}.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.acc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chipb{min-height:40px;padding:0 14px;border-radius:99px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:14px}
+.chipb.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.trow2{display:flex;gap:var(--s2);align-items:flex-start;padding:var(--s2) 0;border-top:1px solid var(--line)}.trow2:first-of-type{border-top:0}
+.trow2>div{flex:1}.trow2 b{display:block}.trow2 small{color:var(--muted);font-size:13px;display:block}
+.heat td{border-bottom:2px solid var(--card)}.heat tr.sub td{font-weight:800;border-top:2px solid var(--ink)}.heat tr.tot td{font-size:16px}
+/* usuarios */
+.drop{border:3px dashed var(--line);border-radius:22px;padding:var(--s4);text-align:center;display:grid;gap:var(--s2);justify-items:center;background:var(--card)}
+.drop svg{width:56px;height:56px;color:var(--coral)}
+.drop input{display:none}
+.thumb{width:120px;height:90px;object-fit:cover;border-radius:12px;border:2px solid var(--line)}
+.spin{width:28px;height:28px;border:4px solid var(--line);border-top-color:var(--coral);border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.olist{display:grid}.orow{display:flex;align-items:center;gap:var(--s2);padding:8px 0;border-top:1px solid var(--line)}.orow:first-child{border-top:0}
+.onum{width:26px;color:var(--muted);font-weight:800;text-align:right;flex:none}.ofld{flex:1;display:grid;gap:4px}.ofld input{padding:8px 12px}.ofld small{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.ofld .pic svg{width:20px;height:20px}
+.pic{display:inline-flex;gap:4px}.pic svg{width:26px;height:26px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s2)}
+.ucard{border:2px dashed var(--muted);border-radius:16px;padding:var(--s2) var(--s3);background:var(--card);display:grid;gap:4px}
+.ucard b{font-family:Fredoka,sans-serif;font-size:18px}.ucard code{font-size:15px;font-weight:700;color:var(--coral)}
+.ucard .pic svg{width:34px;height:34px}
+.phone{width:260px;max-width:100%;margin:0 auto;border:8px solid var(--ink);border-radius:34px;padding:var(--s3);background:#fff8ee;color:#2b1d3a;display:grid;gap:var(--s2);text-align:center}
+.phone input{background:#fff;border-color:#f0dbe1;color:#2b1d3a}
+.picks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.picks span{background:#fff;border:2px solid #f0dbe1;border-radius:14px;padding:8px;display:grid;place-items:center}
+.picks span.on{border-color:#e9456f;background:#ffeef2}
+.picks svg{width:32px;height:32px}
+/* config */
+.scale{display:grid;gap:var(--s2)}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:var(--s2);align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.srow:first-child{border-top:0}
+.srow b{display:block}.srow small{color:var(--muted);font-size:14px}
+.srow input{text-align:right;font-family:Fredoka,sans-serif;font-size:20px;font-weight:700}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:12px 20px;border-radius:14px;font-weight:700;z-index:30;max-width:92vw;text-align:center}
+.task{display:grid;gap:8px;padding:var(--s3) 0;border-top:1px solid var(--line)}.task:first-of-type{border-top:0}
+.task .top{display:flex;justify-content:space-between;gap:var(--s2);flex-wrap:wrap;align-items:center}
+details summary{cursor:pointer;font-weight:700;color:var(--coral);min-height:32px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:var(--s2);align-items:end}
+@media(max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.login{grid-template-columns:1fr}.login .art{padding:var(--s4)}.login .art svg{width:150px}.who span{display:none}}
+@media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 12px;padding-inline-start:9.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:9em;margin-inline-start:-9em;white-space:normal;color:var(--muted);font-size:13px;font-weight:700}.stack td:empty{display:none}.stack td.n{text-align:start}.card{padding:var(--s3)}.hrow{grid-template-columns:112px minmax(0,1fr) 34px;font-size:14px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="numi" viewBox="0 0 120 120"><ellipse cx="60" cy="113" rx="32" ry="5" fill="#000" opacity=".12"/><circle cx="26" cy="54" r="14" fill="#e9456f"/><circle cx="22" cy="76" r="12" fill="#13998b"/><circle cx="30" cy="95" r="10" fill="#a45fd1"/><path d="M40 36 L33 13 L53 28 Z M80 36 L87 13 L67 28 Z" fill="#fff" stroke="#2b1d3a" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="60" cy="67" rx="37" ry="35" fill="#fff" stroke="#2b1d3a" stroke-width="2.5"/><circle cx="44" cy="36" r="11" fill="#e9456f"/><circle cx="58" cy="31" r="10" fill="#13998b"/><circle cx="72" cy="35" r="9" fill="#a45fd1"/><circle cx="34" cy="44" r="8" fill="#ffc93c"/><path d="M60 4 L51 33 L69 33 Z" fill="#ffd34d" stroke="#c98a10" stroke-width="2" stroke-linejoin="round"/><ellipse cx="60" cy="86" rx="23" ry="13" fill="#ffd6e0" stroke="#2b1d3a" stroke-width="2.2"/><circle cx="52" cy="85" r="2.2" fill="#2b1d3a"/><circle cx="68" cy="85" r="2.2" fill="#2b1d3a"/><path d="M54 92 Q60 97 66 92" fill="none" stroke="#2b1d3a" stroke-width="2.2" stroke-linecap="round"/><circle cx="45" cy="63" r="6.5" fill="#2b1d3a"/><circle cx="75" cy="63" r="6.5" fill="#2b1d3a"/><circle cx="47.5" cy="60.5" r="2.3" fill="#fff"/><circle cx="77.5" cy="60.5" r="2.3" fill="#fff"/><ellipse cx="34" cy="76" rx="6" ry="3.5" fill="#ff8fa8" opacity=".75"/><ellipse cx="86" cy="76" rx="6" ry="3.5" fill="#ff8fa8" opacity=".75"/></symbol>
+<symbol id="i-estrella" viewBox="0 0 32 32"><path d="M16 3l4 8.5 9 1.2-6.6 6.2 1.7 9.1L16 23.6 7.9 28l1.7-9.1L3 12.7l9-1.2z" fill="#ffc93c" stroke="#b9800e" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+<symbol id="i-corazon" viewBox="0 0 32 32"><path d="M16 28C4 20 2 13 5 8.5 8 4 13 5 16 9c3-4 8-5 11-.5 3 4.5 1 11.5-11 19.5z" fill="#e9456f" stroke="#b72f53" stroke-width="1.5"/></symbol>
+<symbol id="i-luna" viewBox="0 0 32 32"><path d="M21 4a12 12 0 1 0 8 19A10 10 0 0 1 21 4z" fill="#a45fd1" stroke="#7a3da8" stroke-width="1.5"/></symbol>
+<symbol id="i-sol" viewBox="0 0 32 32"><circle cx="16" cy="16" r="7" fill="#ff9f1c"/><path d="M16 2v5M16 25v5M2 16h5M25 16h5M6 6l3.5 3.5M22.5 22.5 26 26M6 26l3.5-3.5M22.5 9.5 26 6" stroke="#ff9f1c" stroke-width="2.6" stroke-linecap="round"/></symbol>
+<symbol id="i-flor" viewBox="0 0 32 32"><g fill="#ff8fb8"><circle cx="16" cy="8" r="6"/><circle cx="24" cy="16" r="6"/><circle cx="16" cy="24" r="6"/><circle cx="8" cy="16" r="6"/></g><circle cx="16" cy="16" r="4.5" fill="#ffc93c"/></symbol>
+<symbol id="i-nube" viewBox="0 0 32 32"><path d="M9 25a6 6 0 0 1-.7-12A8 8 0 0 1 23.6 11 6 6 0 0 1 24 25z" fill="#3d8bd9" stroke="#22609e" stroke-width="1.5"/></symbol>
+<symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+</defs></svg>
+<div id="root"></div>
+<script>
+{
+const $=s=>document.querySelector(s),root=$('#root');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f1=n=>n==null?'—':n.toFixed(1).replace('.',',');
+const pct=n=>isFinite(n)?Math.round(n*100)+'%':'—';
+const NUMI='<svg viewBox="0 0 120 120"><use href="#numi"/></svg>';
+const PICS=['estrella','corazon','luna','sol','flor','nube'];
+const pic=k=>`<svg><use href="#i-${k}"/></svg>`;
+const ISL=[{k:'suma',n:'Sumas',c:'#e9456f'},{k:'resta',n:'Restas',c:'#13998b'},{k:'mult',n:'Multiplicación',c:'#f08a24'},{k:'div',n:'División',c:'#3d8bd9'},{k:'frac',n:'Fracciones',c:'#a45fd1'},{k:'prob',n:'Problemas',c:'#2b1d3a'}];
+const LVN=['Calentando','En marcha','Desafío'];
+const QN={p:'A la primera',s:'2.º intento',m:'3+ intentos',a:'Con ayuda'};
+const DEF_SCALE={p:5,s:4,m:3.5,a:3,alert:3.6};
+
+/* ---------- datos de ejemplo (en la versión final vienen de Firebase) ---------- */
+let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646};
+const pickR=a=>a[Math.floor(rnd()*a.length)];
+const FIRST=['Valentina','Sofía','Isabella','Mariana','Salomé','Luciana','Gabriela','Daniela','Sara','Antonella','Emily','Juliana','Manuela','Camila','María José','Ana Sofía','Paula','Victoria','Martina','Samantha','Laura','Valeria','Ximena','Abigail','Mía','Luisa','Celeste','Danna','Allison','Isabel','Amelia','Helena'];
+const LAST=['Restrepo','Gómez','Zapata','Arango','Muñoz','Ospina','Cardona','Henao','Montoya','Giraldo','Vélez','Ramírez','Correa','Londoño','Ríos','Agudelo','Mejía','Castaño','Betancur','Quintero'];
+const DAY=864e5,NOW=Date.now();
+const slug=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]+/g,'');
+function makeClass(id,name,n,off=0){
+  const used=new Set(),st=[];
+  for(let i=0;i<n;i++){
+    let fn,ln;do{fn=pickR(FIRST);ln=pickR(LAST)}while(used.has(fn+ln));used.add(fn+ln);
+    const skill=Math.min(.97,Math.max(.1,.22+rnd()*.72+off)),active=rnd(),retos=[],DIF=[0,.04,.1,.16,.26,.22];
+    const count=active<.12?0:Math.floor(3+rnd()*12),reach=Math.min(5,Math.floor(count/2.4));
+    for(let r=0;r<count;r++){
+      const isl=Math.min(reach,Math.floor(rnd()*(reach+1))),lvl=Math.min(2,Math.floor(rnd()*3));
+      const sk=Math.max(.08,skill-DIF[isl]-lvl*.05);
+      const qs=Array.from({length:5},()=>{const x=rnd();return x<sk?'p':x<sk+(1-sk)*.4?'s':x<sk+(1-sk)*.62?'m':'a'});
+      retos.push({isl,lvl,qs,t:NOW-(active<.3?8+Math.floor(rnd()*18):Math.floor(rnd()*7))*DAY-Math.floor(rnd()*8)*36e5});
+    }
+    retos.sort((a,b)=>b.t-a.t);
+    st.push({id:id+'-'+i,name:fn+' '+ln,user:slug(fn.split(' ')[0])+'.'+slug(ln).slice(0,3),pics:[pickR(PICS),pickR(PICS),pickR(PICS)],retos,stars:retos.reduce((a,r)=>a+r.qs.reduce((b,q)=>b+(q=='p'?3:q=='s'?2:1),0),0)});
+  }
+  st.sort((a,b)=>a.name.localeCompare(b.name,'es'));
+  return{id,name,students:st,tasks:[]};
+}
+const D={
+  classes:[makeClass('5a','5.°A',28),makeClass('5b','5.°B',26,-.22),makeClass('3a','3.°A',27,.12),makeClass('3b','3.°B',25,-.05),makeClass('4a','4.°A',29,.05),makeClass('4b','4.°B',24,-.3)],
+  teachers:[{id:'t1',name:'Luz Aide',email:'luzaide@colegio.edu.co',access:['5a','5b']},{id:'t2',name:'Marta Lucía',email:'martalucia@colegio.edu.co',access:['3a','3b']},
+   {id:'t3',name:'Jorge Iván',email:'jorgeivan@colegio.edu.co',access:['4a','4b']},{id:'t4',name:'Paola Andrea',email:'paolaandrea@colegio.edu.co',access:['4b','5b']}],
+  admin:{name:'Coordinación académica',email:'coordinacion@colegio.edu.co'},
+  scale:{...DEF_SCALE},overrides:{},notes:{}};
+D.classes.forEach(c=>{c.grade=+c.id[0];c.year=2026});
+D.year=2026;
+[['5a25','5.°A',25,5],['5b25','5.°B',24,5],['4a25','4.°A',26,4],['4b25','4.°B',23,4],['3a25','3.°A',27,3],['3b25','3.°B',22,3]].forEach(([id,n,k,g])=>{const c=makeClass(id,n,k,(g-4)*.04);c.grade=g;c.year=2025;c.closed=true;c.teacherNames=['Profesora 2025'];D.classes.push(c)});
+D.classes[0].tasks=[{isl:2,lvl:0,due:NOW+3*DAY,created:NOW-4*DAY},{isl:0,lvl:2,due:NOW-1*DAY,created:NOW-9*DAY}];
+D.classes[1].tasks=[{isl:1,lvl:1,due:NOW+5*DAY,created:NOW-2*DAY}];
+const GR=[3,4,5];
+const clsAvg=c=>avg(c.students.map(finalNota).filter(x=>x!=null));
+const clsIsl=(c,i)=>avg(c.students.map(s=>islaNota(s,i).v).filter(v=>v!=null));
+const teachersOf=id=>{const c=D.classes.find(x=>x.id==id);return c&&c.teacherNames?c.teacherNames:D.teachers.filter(t=>t.access.includes(id)).map(t=>t.name)};
+
+/* ---------- notas ---------- */
+const qv=q=>D.scale[q];
+const retoNota=r=>r.qs.reduce((a,q)=>a+qv(q),0)/r.qs.length;
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+function islaNota(s,i){const o=D.overrides[s.id+'|'+i];if(o!=null)return{v:o,adj:true};const rs=s.retos.filter(r=>r.isl==i);return{v:rs.length?avg(rs.map(retoNota)):null,adj:false}}
+function finalNota(s){const v=ISL.map((_,i)=>islaNota(s,i).v).filter(x=>x!=null);return avg(v)}
+function counts(s){const c={p:0,s:0,m:0,a:0,t:0};s.retos.forEach(r=>r.qs.forEach(q=>{c[q]++;c.t++}));return c}
+const desemp=n=>n==null?['Sin nota','p-n']:n>=4.6?['Superior','p-ok']:n>=4?['Alto','p-ok']:n>=3?['Básico','p-warn']:['Bajo','p-bad'];
+const ago=t=>{if(!t)return'Nunca';const d=Math.floor((NOW-t)/DAY);return d<=0?'Hoy':d==1?'Ayer':d<7?`Hace ${d} días`:`Hace ${Math.floor(d/7)} sem.`};
+const last=s=>s.retos[0]?.t;
+const fdate=t=>new Date(t).toLocaleDateString('es-CO',{day:'numeric',month:'short'});
+
+/* ---------- estado de la vista ---------- */
+let V={role:'teacher',me:'t1',atab:'colegio',editT:null,screen:'login',cls:0,tab:'resumen',student:null,q:'',sort:'name',ocr:null};
+function toast(m){$('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
+const C=()=>D.classes[V.cls];
+
+const ME=()=>D.teachers.find(t=>t.id==V.me);
+const myClasses=()=>V.role=='admin'?D.classes.filter(c=>c.year==D.year):D.classes.filter(c=>c.year==D.year&&ME().access.includes(c.id));
+const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+function topbar(){const nm=V.role=='admin'?D.admin.name:ME().name;return `<header class="bar"><div class="wrap"><button class="brand" data-a="home">${NUMI}<span>Numi <small>${V.role=='admin'?'Súper usuario':'Panel docente'}</small></span></button>
+<span class="demo">Datos de ejemplo</span><button class="who" data-a="logout" title="Cerrar sesión"><span>${nm}</span><i class="av" style="${V.role=='admin'?'background:var(--ink)':''}">${ini(nm)}</i></button></div></header>`}
+
+function render(){
+  if(V.screen=='login')return login();
+  let body='';
+  if(V.screen=='home')body=V.role=='admin'?adminHome():home();
+  else if(V.screen=='student')body=student();
+  else body=salon();
+  root.innerHTML=topbar()+`<main class="wrap">${body}</main>`;
+}
+function login(){
+  root.innerHTML=`<div class="login"><div class="art">${NUMI}</div><form id="lf">
+  <h1>Hola, profe</h1><p class="muted">Entra para ver cómo van tus estudiantes en Numi.</p>
+  <div><label for="em">Correo del colegio</label><input id="em" type="email" value="${D.teachers[0].email}" autocomplete="username"></div>
+  <div><label for="pw">Contraseña</label><input id="pw" type="password" value="numi2026" autocomplete="current-password"></div>
+  <button class="btn" type="submit">Entrar</button>
+  <div class="card" style="background:var(--warn);border:0"><b>Prototipo: elige cómo quieres verlo</b>
+  <div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm" type="button" data-a="as" data-r="teacher">Profesora (Luz Aide)</button><button class="btn sm alt" type="button" data-a="as" data-r="admin">Súper usuario (coordinación)</button></div></div>
+  <p class="muted" style="font-size:14px">En la versión final cada cuenta entra con su correo y el sistema sabe si es profesor o súper usuario.</p></form></div>`;
+}
+function salonCard(c){const i=D.classes.indexOf(c),st=c.students,act=st.filter(s=>last(s)&&NOW-last(s)<7*DAY).length,prom=clsAvg(c),need=st.filter(s=>{const n=finalNota(s);return n==null||n<D.scale.alert}).length;
+  return `<button class="salon" data-a="cls" data-i="${i}"><h2>${c.name}</h2>${V.role=='admin'?`<span class="muted" style="font-weight:700;margin-top:-6px">${teachersOf(c.id).join(', ')||'Sin profesor asignado'}</span>`:''}${st.length?`<div class="big">${f1(prom)}</div><span class="muted" style="font-weight:700;margin-top:-8px">nota promedio del curso</span>`:`<span class="pill p-warn" style="justify-self:start">Sin estudiantes todavía</span><span class="muted" style="font-size:14px">El profesor las agrega desde Usuarios, con la foto de la lista.</span>`}
+  <div class="row3"><span><b>${st.length}</b>estudiantes</span><span><b>${act}</b>jugaron esta semana</span><span><b>${need}</b>necesitan apoyo</span></div></button>`}
+function home(){
+  const t=ME(),gs=[...new Set(myClasses().map(c=>c.grade))].sort();
+  return `<div class="head"><div><h1>Buenos días, ${t.name}</h1><p class="muted">Matemáticas · ${gs.map(g=>g+'.°').join(' y ')}</p></div></div>
+  <div class="salones">${myClasses().map(salonCard).join('')}</div>`;
+}
+const TABS=[['resumen','Resumen'],['estudiantes','Estudiantes'],['notas','Planilla de notas'],['tareas','Tareas'],['usuarios','Usuarios'],['config','Configuración']];
+function salon(){
+  const c=C();
+  const t={resumen,estudiantes,notas,tareas,usuarios,config}[V.tab]();
+  return `<button class="back" data-a="home">‹ ${V.role=='admin'?'Panel del colegio':'Mis salones'}</button><div class="head"><h1>${c.name}</h1><p class="muted">${c.students.length} estudiantes · ${teachersOf(c.id).join(', ')||'Sin profesor'} · ${c.closed?'Año '+c.year:'Periodo 4'}</p></div>${c.closed?`<p class="note" style="background:var(--warn);border-radius:14px;padding:12px 16px;margin-bottom:var(--s2)"><b>Año ${c.year} cerrado:</b> solo consulta. Las notas quedan guardadas como historial.</p>`:''}
+  <nav class="tabs">${TABS.map(([k,n])=>`<button class="tab ${V.tab==k?'on':''}" data-a="tab" data-t="${k}">${n}</button>`).join('')}</nav>${t}`;
+}
+
+/* súper usuario */
+const ATABS=[['colegio','Colegio'],['profesores','Profesores'],['cursos','Cursos']];
+const heat=v=>v==null?'var(--line)':v>=4.6?'light-dark(#c9efe8,#1d5048)':v>=4?'light-dark(#e3f6f3,#1d4440)':v>=3.5?'light-dark(#fff4d6,#4a3a17)':'light-dark(#fde6ec,#4d2232)';
+const sortedCls=(y=D.year)=>D.classes.filter(c=>c.year==y).sort((a,b)=>a.grade-b.grade||a.name.localeCompare(b.name,'es'));
+function adminHome(){
+  const t={colegio:aColegio,profesores:aProfes,cursos:aCursos}[V.atab]();
+  return `<div class="head"><div><h1>Panel del colegio</h1><p class="muted">Súper usuario · año lectivo ${D.year}</p></div></div>
+  <nav class="tabs">${ATABS.map(([k,n])=>`<button class="tab ${V.atab==k?'on':''}" data-a="atab" data-t="${k}">${n}</button>`).join('')}</nav>${t}`;
+}
+function aColegio(){
+  const cls=sortedCls(),all=cls.flatMap(c=>c.students);
+  const glob=avg(all.map(finalNota).filter(x=>x!=null)),week=all.filter(s=>last(s)&&NOW-last(s)<7*DAY).length;
+  const cell=v=>`<td class="n" style="background:${heat(v)}"><b>${f1(v)}</b></td>`;
+  const gAvg=(g,i)=>{const ss=cls.filter(c=>c.grade==g).flatMap(c=>c.students);return i==null?avg(ss.map(finalNota).filter(x=>x!=null)):avg(ss.map(s=>islaNota(s,i).v).filter(v=>v!=null))};
+  const tAvg=i=>avg(all.map(s=>islaNota(s,i).v).filter(v=>v!=null));
+  return `<div class="kpis"><div class="kpi c1"><b>${f1(glob)}</b><span>Nota promedio global</span></div><div class="kpi c2"><b>${all.length}</b><span>Estudiantes en ${cls.length} cursos</span></div>
+  <div class="kpi c3"><b>${D.teachers.length}</b><span>Profesores</span></div><div class="kpi c4"><b>${pct(week/all.length)}</b><span>Jugaron esta semana</span></div></div>
+  <section class="card"><h3>Nota promedio por curso y tema</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Verde: alto o superior · amarillo: 3,5 a 3,9 · rosado: menos de 3,5. Toca un curso para ver sus estudiantes.</p>
+  <div class="scroll"><table class="heat"><thead><tr><th>Curso</th>${ISL.map(x=>`<th class="n">${x.n}</th>`).join('')}<th class="n">Global</th></tr></thead><tbody>
+  ${GR.map(g=>cls.filter(c=>c.grade==g).map(c=>`<tr class="click" data-a="cls" data-i="${D.classes.indexOf(c)}"><td style="white-space:nowrap"><b>${c.name}</b><br><small class="muted">${teachersOf(c.id).join(', ')||'—'}</small></td>${ISL.map((_,i)=>cell(clsIsl(c,i))).join('')}${cell(clsAvg(c))}</tr>`).join('')+
+   `<tr class="sub"><td><b>Grado ${g}.°</b></td>${ISL.map((_,i)=>cell(gAvg(g,i))).join('')}${cell(gAvg(g))}</tr>`).join('')}
+  <tr class="sub tot"><td><b>Colegio</b></td>${ISL.map((_,i)=>cell(tAvg(i))).join('')}${cell(glob)}</tr></tbody></table></div></section>
+  <div class="grid g2" style="margin-top:var(--s3)"><section class="card"><h3>Promedio global por grado</h3><div class="rows">${GR.map(g=>{const v=gAvg(g);return `<div class="hrow"><span>Grado ${g}.°</span><span class="track"><i style="--c:var(--coral);width:${v?v/5*100:0}%"></i></span><em>${f1(v)}</em></div>`}).join('')}</div></section>
+  <section class="card"><h3>Promedio del colegio por tema</h3><div class="rows">${ISL.map((x,i)=>{const v=tAvg(i);return `<div class="hrow"><span>${x.n}</span><span class="track"><i style="--c:${x.c};width:${v?v/5*100:0}%"></i></span><em>${f1(v)}</em></div>`}).join('')}</div></section></div>
+  <div class="tools" style="margin-top:var(--s3)"><button class="btn alt" data-a="copyall">Copiar consolidado para Excel</button></div>`;
+}
+function accessPicker(sel,prefix){
+  return GR.map(g=>{const cs=sortedCls().filter(c=>c.grade==g),allOn=cs.every(c=>sel.includes(c.id));
+    return `<div class="acc"><button type="button" class="chipb ${allOn?'on':''}" data-a="${prefix}g" data-g="${g}">Todo ${g}.°</button>${cs.map(c=>`<button type="button" class="chipb ${sel.includes(c.id)?'on':''}" data-a="${prefix}c" data-c="${c.id}">${c.name}</button>`).join('')}</div>`}).join('');
+}
+let NT={name:'',email:'',access:[]},NC={grade:3,name:'',year:2026,teachers:[]},VY=2026,EC=null;
+const nextName=(g,y)=>{const used=D.classes.filter(c=>c.year==y&&c.grade==g).map(c=>c.name);for(const L of 'ABCDEFGH'){const n=`${g}.°${L}`;if(!used.includes(n))return n}return g+'.°'};
+function aCursos(){
+  const years=[...new Set(D.classes.map(c=>c.year).concat(D.year))].sort(),cls=sortedCls(VY),next=D.year+1,hasNext=D.classes.some(c=>c.year==next);
+  if(!NC.name)NC.name=nextName(NC.grade,NC.year);
+  return `<div class="grid g2"><section class="card" style="align-self:start"><h3>Crear curso</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Cada año cambian los cursos: créalos aquí y asígnales profesor.</p>
+  <div class="fields"><div><label for="ncy">Año lectivo</label><select id="ncy">${[D.year,next].map(y=>`<option ${NC.year==y?'selected':''}>${y}</option>`).join('')}</select></div>
+  <div><label for="ncg">Grado</label><select id="ncg">${GR.map(g=>`<option value="${g}" ${NC.grade==g?'selected':''}>${g}.°</option>`).join('')}</select></div>
+  <div><label for="ncn">Nombre del curso</label><input id="ncn" value="${esc(NC.name)}" placeholder="Ej.: 5.°C"></div></div>
+  <label style="margin-top:var(--s3)">Profesores del curso</label><div class="acc">${D.teachers.map(t=>`<button type="button" class="chipb ${NC.teachers.includes(t.id)?'on':''}" data-a="nct" data-id="${t.id}">${esc(t.name)}</button>`).join('')}</div>
+  <button class="btn" data-a="ncsave" style="margin-top:var(--s2)">Crear curso</button>
+  <div class="note" style="background:var(--soft);border-radius:14px;padding:var(--s3);margin-top:var(--s4)"><b>Nuevo año lectivo</b><p class="muted" style="font-size:14px;margin:4px 0 var(--s2)">${hasNext?`Ya hay cursos creados para ${next}.`:`Crea de una vez los cursos de ${next} con los mismos nombres de ${D.year}, sin estudiantes ni profesores, y luego ajústalos.`}</p>
+  ${hasNext?'':`<button class="btn alt sm" data-a="copyyear">Preparar ${next} copiando los cursos de ${D.year}</button>`}</div></section>
+  <section class="card"><div class="tools" style="margin-bottom:var(--s2);align-items:center"><h3 style="margin-right:auto">Cursos ${VY}</h3>${years.map(y=>`<button class="chipb ${VY==y?'on':''}" data-a="vy" data-y="${y}">${y}${y<D.year?' · cerrado':y>D.year?' · próximo':''}</button>`).join('')}</div>
+  ${cls.length?GR.map(g=>{const cs=cls.filter(c=>c.grade==g);return cs.length?`<p class="lab" style="margin:var(--s3) 0 4px;font-weight:800">Grado ${g}.°</p>`+cs.map(c=>{const i=D.classes.indexOf(c);
+    if(EC==c.id)return `<div class="trow2" style="display:block"><div class="fields"><div><label for="ecn">Nombre</label><input id="ecn" value="${esc(c.name)}"></div></div>
+      <label style="margin-top:var(--s2)">Profesores</label><div class="acc">${D.teachers.map(t=>`<button type="button" class="chipb ${t.access.includes(c.id)?'on':''}" data-a="ect" data-id="${t.id}" data-c="${c.id}">${esc(t.name)}</button>`).join('')}</div>
+      <div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm alt" data-a="ecsave" data-c="${c.id}">Guardar</button><button class="btn sm ghost" data-a="ecx">Cancelar</button>
+      ${c.students.length?`<span class="muted" style="font-size:13px;align-self:center">No se puede eliminar: tiene ${c.students.length} estudiantes.</span>`:`<button class="btn sm ghost" style="color:var(--coral)" data-a="ecdel" data-c="${c.id}">Eliminar curso</button>`}</div></div>`;
+    return `<div class="trow2"><i class="av" style="background:${c.closed?'var(--muted)':'var(--teal)'}">${c.name.replace('.°','')}</i><div><b>${esc(c.name)}</b><small>${c.students.length} estudiantes · ${teachersOf(c.id).join(', ')||'<span style="color:var(--coral)">sin profesor</span>'}</small></div>
+    <span class="tools" style="margin:0;flex-wrap:nowrap"><button class="btn ghost sm" data-a="cls" data-i="${i}">Ver</button>${c.closed?'':`<button class="btn ghost sm" data-a="ecedit" data-c="${c.id}">Editar</button>`}</span></div>`}).join(''):''}).join(''):`<p class="muted">No hay cursos en ${VY}.</p>`}</section></div>`;
+}
+function aProfes(){
+  return `<div class="grid g2"><section class="card" style="align-self:start"><h3>Crear profesor</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Le llega un correo para crear su contraseña. Solo verá los cursos que le asignes.</p>
+  <div class="grid" style="gap:var(--s2)"><div><label for="ntn">Nombre</label><input id="ntn" value="${esc(NT.name)}" placeholder="Ej.: Ana María Gómez"></div>
+  <div><label for="nte">Correo del colegio</label><input id="nte" type="email" value="${esc(NT.email)}" placeholder="nombre@colegio.edu.co"></div>
+  <div><label>Acceso a grados y cursos</label>${accessPicker(NT.access,'nt')}</div>
+  <button class="btn" data-a="ntsave">Crear profesor</button></div></section>
+  <section class="card"><h3>Profesores (${D.teachers.length})</h3>${D.teachers.map(t=>{const cs=sortedCls().filter(c=>t.access.includes(c.id)),n=cs.reduce((a,c)=>a+c.students.length,0),pr=avg(cs.flatMap(c=>c.students).map(finalNota).filter(x=>x!=null));
+    return `<div class="trow2"><i class="av">${ini(t.name)}</i><div><b>${esc(t.name)}</b><small>${esc(t.email)}</small>
+    <div class="qs" style="margin-top:6px">${cs.length?cs.map(c=>`<button class="q q-s" data-a="cls" data-i="${D.classes.indexOf(c)}">${c.name}</button>`).join(''):'<span class="pill p-bad">Sin acceso</span>'}</div>
+    <small style="margin-top:4px">${n} estudiantes · promedio ${f1(pr)}</small>
+    ${V.editT==t.id?`<div style="margin-top:var(--s2)">${accessPicker(t.access,'et')}<div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm alt" data-a="etdone">Listo</button></div></div>`:''}</div>
+    ${V.editT==t.id?'':`<button class="btn ghost sm" data-a="etedit" data-id="${t.id}">Editar acceso</button>`}</div>`}).join('')}</section></div>`;
+}
+function toggleAccess(list,a,b){
+  if(a.endsWith('g')){const ids=D.classes.filter(c=>c.grade==+b.dataset.g).map(c=>c.id),on=ids.every(i=>list.includes(i));ids.forEach(i=>{const k=list.indexOf(i);if(on&&k>=0)list.splice(k,1);if(!on&&k<0)list.push(i)})}
+  else{const i=b.dataset.c,k=list.indexOf(i);k>=0?list.splice(k,1):list.push(i)}
+}
+function copyAll(){
+  const rows=[['Curso','Profesor','Estudiante',...ISL.map(x=>x.n),'Final','Desempeño']],fx=v=>v==null?'':v.toFixed(1).replace('.',',');
+  sortedCls().forEach(c=>c.students.forEach(s=>{const n=finalNota(s);rows.push([c.name,teachersOf(c.id).join(' / '),s.name,...ISL.map((_,i)=>fx(islaNota(s,i).v)),fx(n),desemp(n)[0]])}));
+  navigator.clipboard.writeText(rows.map(r=>r.join('\t')).join('\n')).then(()=>toast('Consolidado copiado: todos los cursos y estudiantes.'),()=>toast('No se pudo copiar en este navegador.'));
+}
+
+/* resumen */
+function resumen(){
+  const st=C().students;if(!st.length)return `<section class="card"><h3>Este curso todavía no tiene estudiantes</h3><p class="muted" style="margin-top:6px">Ve a la pestaña <b>Usuarios</b> y sube la foto de la lista del salón para crearlas.</p><button class="btn" data-a="tab" data-t="usuarios" style="margin-top:var(--s3)">Ir a Usuarios</button></section>`;
+  const week=st.filter(s=>last(s)&&NOW-last(s)<7*DAY),all={p:0,s:0,m:0,a:0,t:0};
+  st.forEach(s=>{const c=counts(s);for(const k in all)all[k]+=c[k]});
+  const notas=st.map(finalNota).filter(x=>x!=null),prom=avg(notas);
+  const byIsl=ISL.map((x,i)=>{const v=st.map(s=>islaNota(s,i).v).filter(v=>v!=null);return{...x,v:avg(v),cnt:v.length}});
+  const bands=[['Superior','#13998b',n=>n>=4.6],['Alto','#7cc9a0',n=>n>=4&&n<4.6],['Básico','#f2b01e',n=>n>=3&&n<4],['Bajo','#e9456f',n=>n<3]].map(([l,c,fn])=>({l,c,n:notas.filter(fn).length}));
+  const sin=st.length-notas.length;
+  const need=st.map(s=>{const n=finalNota(s),c=counts(s),r=[];if(n==null)r.push('No ha jugado');else{if(n<D.scale.alert)r.push('Nota '+f1(n));if(c.t&&c.a/c.t>.25)r.push(pct(c.a/c.t)+' con ayuda')}if(last(s)&&NOW-last(s)>7*DAY)r.push('Sin jugar hace más de una semana');return{s,r}}).filter(x=>x.r.length).slice(0,8);
+  const recent=st.flatMap(s=>s.retos.map(r=>({s,r}))).sort((a,b)=>b.r.t-a.r.t).slice(0,7);
+  return `<div class="kpis"><div class="kpi c1"><b>${f1(prom)}</b><span>Nota promedio</span></div><div class="kpi c2"><b>${week.length} de ${st.length}</b><span>Jugaron esta semana</span></div>
+  <div class="kpi c3"><b>${pct(all.p/all.t)}</b><span>Respuestas a la primera</span></div><div class="kpi c4"><b>${pct(all.a/all.t)}</b><span>Usaron la ayuda de Numi</span></div></div>
+  <div class="grid g2"><section class="card"><h3>Nota promedio por isla</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">La más baja es la que más hay que reforzar.</p>
+  <div class="rows">${byIsl.map(x=>`<div class="hrow"><span>${x.n}</span><span class="track"><i style="--c:${x.c};width:${x.v?x.v/5*100:0}%"></i></span><em>${f1(x.v)}</em></div>`).join('')}</div></section>
+  <section class="card"><h3>Desempeño del salón</h3><div class="stackbar">${bands.map(b=>`<i style="background:${b.c};width:${b.n/st.length*100}%"></i>`).join('')}<i style="background:var(--line);width:${sin/st.length*100}%"></i></div>
+  <div class="legend">${bands.map(b=>`<span><i style="background:${b.c}"></i>${b.l}: ${b.n}</span>`).join('')}<span><i style="background:var(--line)"></i>Sin nota: ${sin}</span></div>
+  <p class="muted" style="font-size:14px;margin-top:var(--s2)">Escala del Decreto 1290: Superior 4,6–5,0 · Alto 4,0–4,5 · Básico 3,0–3,9 · Bajo menos de 3,0.</p></section>
+  <section class="card"><h3>Necesitan apoyo</h3>${need.length?need.map(({s,r})=>`<button class="alert" data-a="stu" data-id="${s.id}"><i class="av" style="background:var(--gold);color:#2b1d3a">${s.name[0]}</i><div><b>${esc(s.name)}</b><small>${r.join(' · ')}</small></div><span class="link">Ver</span></button>`).join(''):'<p class="muted">¡Todas van bien!</p>'}</section>
+  <section class="card"><h3>Actividad reciente</h3>${recent.map(({s,r})=>{const n=retoNota(r);return `<button class="alert" data-a="stu" data-id="${s.id}"><i class="av" style="background:${ISL[r.isl].c}">${s.name[0]}</i><div><b>${esc(s.name)}</b><small>${ISL[r.isl].n} · Nivel ${r.lvl+1} · ${ago(r.t)}</small></div><span class="nota">${f1(n)}</span></button>`}).join('')}</section></div>`;
+}
+
+/* estudiantes */
+function estudiantes(){
+  let st=C().students.filter(s=>slug(s.name).includes(slug(V.q)));
+  const sorters={name:(a,b)=>a.name.localeCompare(b.name,'es'),nota:(a,b)=>(finalNota(a)??-1)-(finalNota(b)??-1),notaD:(a,b)=>(finalNota(b)??-1)-(finalNota(a)??-1),last:(a,b)=>(last(b)||0)-(last(a)||0)};
+  st=[...st].sort(sorters[V.sort]);
+  return `<div class="tools"><input id="q" placeholder="Buscar estudiante" value="${esc(V.q)}" aria-label="Buscar estudiante"><select id="sort" aria-label="Ordenar">
+  ${[['name','Orden alfabético'],['notaD','Nota: mayor a menor'],['nota','Nota: menor a mayor'],['last','Último ingreso']].map(([k,n])=>`<option value="${k}" ${V.sort==k?'selected':''}>${n}</option>`).join('')}</select></div>
+  <table class="stack"><thead><tr><th>Estudiante</th><th>Último ingreso</th><th class="n">Retos</th><th class="n">A la primera</th><th class="n">Con error</th><th class="n">Con ayuda</th><th class="n">Nota</th></tr></thead>
+  <tbody>${st.map(s=>{const c=counts(s),n=finalNota(s),d=desemp(n);return `<tr class="click" data-a="stu" data-id="${s.id}"><td><b>${esc(s.name)}</b></td><td>${ago(last(s))}</td><td class="n">${s.retos.length}</td>
+  <td class="n">${c.t?pct(c.p/c.t):'—'}</td><td class="n">${c.t?pct((c.s+c.m)/c.t):'—'}</td><td class="n">${c.t?pct(c.a/c.t):'—'}</td><td class="n"><span class="nota">${f1(n)}</span> <span class="pill ${d[1]}">${d[0]}</span></td></tr>`}).join('')}</tbody></table>
+  ${st.length?'':'<p class="muted" style="margin-top:var(--s3)">No hay estudiantes con ese nombre.</p>'}`;
+}
+
+/* detalle de estudiante */
+function student(){
+  const s=C().students.find(x=>x.id==V.student),c=counts(s),n=finalNota(s),d=desemp(n);
+  return `<button class="back" data-a="tabback">‹ ${C().name} · Estudiantes</button>
+  <div class="head"><div><h1>${esc(s.name)}</h1><p class="muted">Usuario: <b>${s.user}</b> · ${C().name} · Último ingreso: ${ago(last(s))}</p></div><span class="pill ${d[1]}" style="font-size:16px;padding:6px 14px">${d[0]} · ${f1(n)}</span></div>
+  <div class="kpis"><div class="kpi c1"><b>${f1(n)}</b><span>Nota final</span></div><div class="kpi c2"><b>${c.t?pct(c.p/c.t):'—'}</b><span>A la primera</span></div>
+  <div class="kpi c3"><b>${s.retos.length}</b><span>Retos jugados</span></div><div class="kpi c4"><b>${c.t?pct(c.a/c.t):'—'}</b><span>Con ayuda de Numi</span></div></div>
+  <div class="grid g2"><section class="card"><h3>Notas por isla</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Puedes ajustar una nota a mano. La nota final se recalcula sola.</p>
+  <div class="isl-list">${ISL.map((x,i)=>{const rs=s.retos.filter(r=>r.isl==i),calc=rs.length?avg(rs.map(retoNota)):null,o=D.overrides[s.id+'|'+i];
+    return `<div class="isl-row"><i class="dot" style="background:${x.c}"></i><div><b>${x.n}</b><small>${rs.length} retos · calculada ${f1(calc)}</small></div><span class="override"><input type="number" min="1" max="5" step="0.1" inputmode="decimal" value="${o??''}" placeholder="${calc!=null?calc.toFixed(1).replace('.',','):'—'}" data-ov="${s.id}|${i}" aria-label="Ajustar nota de ${x.n}">${o!=null?`<button class="btn ghost sm" data-a="ovreset" data-k="${s.id}|${i}">Quitar</button>`:''}</span></div>`}).join('')}</div></section>
+  <section class="card"><h3>Observaciones del profesor</h3><textarea id="obs" data-id="${s.id}" placeholder="Ej.: se confunde al prestar en las restas. Reforzar con material concreto.">${esc(D.notes[s.id]||'')}</textarea>
+  <p class="muted" style="font-size:14px;margin-top:6px">Se guarda solo. Solo la ven los profesores.</p>
+  <h3 style="margin-top:var(--s4)">Cómo respondió</h3><div class="legend" style="margin-top:var(--s2)">${['p','s','m','a'].map(k=>`<span class="q q-${k}">${QN[k]}: ${c[k]}</span>`).join('')}</div></section></div>
+  <section class="card" style="margin-top:var(--s3)"><h3>Historial de retos</h3>${s.retos.length?s.retos.map(r=>`<div class="reto"><div><b>${ISL[r.isl].n} · Nivel ${r.lvl+1}: ${LVN[r.lvl]}</b><br><small>${fdate(r.t)} · ${ago(r.t)}</small>
+  <div class="qs" style="margin-top:6px">${r.qs.map((q,k)=>`<span class="q q-${q}">P${k+1} · ${QN[q]} · ${f1(qv(q))}</span>`).join('')}</div></div><span class="nota" style="font-size:22px">${f1(retoNota(r))}</span></div>`).join(''):'<p class="muted">Todavía no ha jugado.</p>'}</section>`;
+}
+
+/* planilla */
+function notas(){
+  const st=C().students;
+  return `<p class="muted" style="margin-bottom:var(--s2)">Nota de cada isla = promedio de sus retos. Nota final = promedio de las islas jugadas. Toca una estudiante para ajustar sus notas.</p>
+  <div class="tools"><button class="btn alt" data-a="copy">Copiar planilla para Excel</button></div>
+  <div class="scroll"><table><thead><tr><th>Estudiante</th>${ISL.map(x=>`<th class="n">${x.n}</th>`).join('')}<th class="n">Final</th><th>Desempeño</th></tr></thead>
+  <tbody>${st.map(s=>{const n=finalNota(s),d=desemp(n);return `<tr class="click" data-a="stu" data-id="${s.id}"><td style="white-space:nowrap"><b>${esc(s.name)}</b></td>${ISL.map((_,i)=>{const x=islaNota(s,i);return `<td class="n">${f1(x.v)}${x.adj?'<span class="adj">ajustada</span>':''}</td>`}).join('')}<td class="n nota">${f1(n)}</td><td><span class="pill ${d[1]}">${d[0]}</span></td></tr>`}).join('')}</tbody></table></div>`;
+}
+function copyPlanilla(){
+  const st=C().students,rows=[['Estudiante',...ISL.map(x=>x.n),'Final','Desempeño']];
+  st.forEach(s=>{const n=finalNota(s);rows.push([s.name,...ISL.map((_,i)=>{const v=islaNota(s,i).v;return v==null?'':v.toFixed(1).replace('.',',')}),n==null?'':n.toFixed(1).replace('.',','),desemp(n)[0]])});
+  const tsv=rows.map(r=>r.join('\t')).join('\n');
+  navigator.clipboard.writeText(tsv).then(()=>toast('Planilla copiada. Pégala en Excel o Google Sheets.'),()=>toast('No se pudo copiar en este navegador.'));
+}
+
+/* tareas */
+function tareas(){
+  const c=C();
+  const done=t=>c.students.filter(s=>s.retos.some(r=>r.isl==t.isl&&r.lvl==t.lvl&&r.t>=t.created));
+  const due=new Date(NOW+3*DAY).toISOString().slice(0,10);
+  return `<div class="grid g2"><section class="card"><h3>Asignar una tarea</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Las niñas verán la tarea en su mapa con la fecha límite.</p>
+  <div class="fields"><div><label for="ti">Isla</label><select id="ti">${ISL.map((x,i)=>`<option value="${i}">${x.n}</option>`).join('')}</select></div>
+  <div><label for="tl">Nivel</label><select id="tl">${LVN.map((x,i)=>`<option value="${i}">${i+1}. ${x}</option>`).join('')}</select></div>
+  <div><label for="td">Fecha límite</label><input id="td" type="date" value="${due}"></div></div>
+  <button class="btn" data-a="addtask" style="margin-top:var(--s3)">Asignar a ${c.name}</button></section>
+  <section class="card"><h3>Tareas asignadas</h3>${c.tasks.length?c.tasks.map((t,k)=>{const d=done(t),miss=c.students.filter(s=>!d.includes(s)),late=t.due<NOW;
+    return `<div class="task"><div class="top"><b>${ISL[t.isl].n} · Nivel ${t.lvl+1}: ${LVN[t.lvl]}</b><span class="pill ${late?'p-bad':'p-warn'}">${late?'Venció':'Vence'} ${fdate(t.due)}</span></div>
+    <div class="hrow" style="grid-template-columns:minmax(0,1fr) auto"><span class="track"><i style="width:${c.students.length?d.length/c.students.length*100:0}%"></i></span><em>${d.length} de ${c.students.length}</em></div>
+    ${miss.length?`<details><summary>Ver quién falta (${miss.length})</summary><p class="muted" style="margin-top:6px">${miss.map(s=>esc(s.name)).join(', ')}</p></details>`:'<span class="pill p-ok">¡Todas la hicieron!</span>'}
+    <button class="link" data-a="deltask" data-k="${k}" style="justify-self:start;font-size:14px">Quitar tarea</button></div>`}).join(''):'<p class="muted">No hay tareas asignadas.</p>'}</section></div>`;
+}
+
+/* usuarios */
+const OCR_SAMPLE=['Abigail Restrepo Gómez','Ana Lucía Ospina','Antonella Cardona Ríos','Camila Henao Vélez','Daniela Zapata Muñoz','Emily Arango Mejía','Gabriela Montoya','Isabella Giraldo Correa','Juliana Londoño Ríos','Laura Agudelo Castaño','Luciana Betancur','Manuela Quintero Arango','María José Ramírez','Mariana Correa Henao'];
+function usuarios(){
+  const c=C();
+  let ocr='';
+  if(V.ocr==='loading')ocr=`<div class="drop"><div class="spin" aria-label="Leyendo"></div><b>Numi está leyendo los nombres de la foto…</b></div>`;
+  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos.</p>
+    <div class="olist">${V.ocr.map((r,k)=>`<div class="orow"><span class="onum">${k+1}</span><div class="ofld"><input value="${esc(r.name)}" data-ocr="${k}" aria-label="Nombre ${k+1}"><small>Usuario <code>${r.user}</code> · clave <span class="pic">${r.pics.map(pic).join('')}</span></small></div><button class="link" data-a="ocrdel" data-k="${k}" aria-label="Quitar">Quitar</button></div>`).join('')}</div>
+    <div class="tools" style="margin-top:var(--s3)"><button class="btn ghost" data-a="ocradd">Agregar estudiante</button><button class="btn alt" data-a="ocrsave">Crear ${V.ocr.length} usuarios</button></div></section>`;
+  else ocr=`<label class="drop" for="ph">${'<svg viewBox="0 0 24 24"><use href="#i-cam"/></svg>'}<b>Toma o sube una foto de la lista del salón</b><span class="muted">Numi lee los nombres y crea un usuario y una clave para cada niña.</span><span class="btn">Elegir foto</span><input id="ph" type="file" accept="image/*" capture="environment"></label>`;
+  return `<div class="grid g2"><div class="grid">${ocr}
+  <section class="card"><h3>Tarjetas de ingreso de ${c.name}</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Imprímelas y entrega a cada niña la suya.</p>
+  <div class="cards">${c.students.slice(0,6).map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${s.user}</code><span class="muted" style="font-size:13px">Clave</span><span class="pic">${s.pics.map(pic).join('')}</span></div>`).join('')}</div>
+  <div class="tools" style="margin-top:var(--s3)"><button class="btn" data-a="print">Imprimir las ${c.students.length} tarjetas</button></div></section>
+  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Nueva clave</button></td></tr>`).join('')}</tbody></table></details></section></div>
+  <section class="card" style="align-self:start"><h3>Así entra la niña</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Escribe su usuario y toca sus 3 dibujitos en orden. Es más fácil que una contraseña a esta edad.</p>
+  <div class="phone"><svg viewBox="0 0 120 120" style="width:80px;margin:0 auto"><use href="#numi"/></svg><b style="font-family:Fredoka;font-size:22px">¡Hola! ¿Quién eres?</b><input value="${c.students[0]?.user||'valentina.res'}" aria-label="Usuario de ejemplo" readonly>
+  <span style="font-weight:700;font-size:14px">Toca tus 3 dibujitos</span><div class="picks">${PICS.map(k=>`<span class="${(c.students[0]?.pics||['estrella','luna','flor']).includes(k)?'on':''}">${pic(k)}</span>`).join('')}</div>
+  <span style="background:#e9456f;color:#fff;border-radius:14px;padding:10px;font-weight:800">Entrar</span></div></section></div>`;
+}
+
+/* configuración */
+function config(){
+  const rows=[['p','A la primera','Respondió bien en el primer intento.'],['s','Al segundo intento','Se equivocó una vez y corrigió.'],['m','Con tres o más intentos','Necesitó varios intentos, sin ayuda.'],['a','Con la ayuda paso a paso','Numi le explicó el procedimiento.']];
+  return `<div class="grid g2"><section class="card"><h3>Escala de notas por pregunta</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Cambia los valores cuando quieras. Todas las notas se recalculan solas al instante.</p>
+  <div class="scale">${rows.map(([k,t,d])=>`<div class="srow"><div><b>${t}</b><small>${d}</small></div><input type="number" min="1" max="5" step="0.1" inputmode="decimal" value="${D.scale[k]}" data-sc="${k}" aria-label="${t}"></div>`).join('')}</div>
+  <p class="muted" style="font-size:14px;margin-top:var(--s2)">Nota de cada reto = promedio de sus 5 preguntas.</p></section>
+  <section class="card"><h3>Alertas</h3><div class="srow" style="border:0"><div><b>Avisarme si la nota baja de</b><small>Aparece en "Necesitan apoyo" del resumen.</small></div><input type="number" min="1" max="5" step="0.1" value="${D.scale.alert}" data-sc="alert" aria-label="Nota mínima para alerta"></div>
+  <h3 style="margin-top:var(--s4)">Ejemplo con la escala actual</h3><p style="margin-top:6px">Un reto con 3 a la primera, 1 al segundo intento y 1 con ayuda:</p>
+  <p class="nota" style="font-size:30px;color:var(--coral)" id="ex">${f1((3*D.scale.p+D.scale.s+D.scale.a)/5)}</p>
+  <button class="btn ghost" data-a="screset" style="margin-top:var(--s3)">Volver a los valores iniciales</button></section></div>`;
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('submit',e=>{if(e.target.id=='lf'){e.preventDefault();V.role='teacher';V.screen='home';render();scrollTo(0,0)}});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a=='home'){V.screen='home';render();scrollTo(0,0)}
+  else if(a=='as'){V.role=b.dataset.r;V.me='t1';V.screen='home';V.atab='colegio';render();scrollTo(0,0)}
+  else if(a=='logout'){V.screen='login';render()}
+  else if(a=='atab'){V.atab=b.dataset.t;V.editT=null;EC=null;render()}
+  else if(a=='vy'){VY=+b.dataset.y;EC=null;render()}
+  else if(a=='nct'){NC.name=$('#ncn').value;const k=NC.teachers.indexOf(b.dataset.id);k>=0?NC.teachers.splice(k,1):NC.teachers.push(b.dataset.id);render()}
+  else if(a=='ncsave'){NC.name=$('#ncn').value.trim();if(!NC.name){toast('Escribe el nombre del curso.');return}
+    if(D.classes.some(c=>c.year==NC.year&&c.name.toLowerCase()==NC.name.toLowerCase())){toast(`Ya existe ${NC.name} en ${NC.year}.`);return}
+    const id='c'+Date.now();D.classes.push({id,name:NC.name,grade:NC.grade,year:NC.year,students:[],tasks:[]});
+    NC.teachers.forEach(t=>D.teachers.find(x=>x.id==t).access.push(id));VY=NC.year;toast(`Curso ${NC.name} creado para ${NC.year}.`);NC={grade:NC.grade,name:'',year:NC.year,teachers:[]};render()}
+  else if(a=='copyyear'){const nx=D.year+1;sortedCls(D.year).forEach(c=>D.classes.push({id:'c'+nx+c.id,name:c.name,grade:c.grade,year:nx,students:[],tasks:[]}));VY=nx;toast(`Listo: cursos de ${nx} creados. Asígnales profesor con "Editar".`);render()}
+  else if(a=='ecedit'){EC=b.dataset.c;render()}
+  else if(a=='ecx'){EC=null;render()}
+  else if(a=='ect'){const t=D.teachers.find(x=>x.id==b.dataset.id),k=t.access.indexOf(b.dataset.c);k>=0?t.access.splice(k,1):t.access.push(b.dataset.c);const n=$('#ecn').value;render();$('#ecn').value=n}
+  else if(a=='ecsave'){const c=D.classes.find(x=>x.id==b.dataset.c),n=$('#ecn').value.trim();if(n)c.name=n;EC=null;render();toast('Curso actualizado.')}
+  else if(a=='ecdel'){const k=D.classes.findIndex(x=>x.id==b.dataset.c);D.teachers.forEach(t=>t.access=t.access.filter(i=>i!=b.dataset.c));D.classes.splice(k,1);EC=null;render();toast('Curso eliminado.')}
+  else if(a=='copyall')copyAll();
+  else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;toggleAccess(NT.access,a,b);render()}
+  else if(a=='etg'||a=='etc'){toggleAccess(D.teachers.find(t=>t.id==V.editT).access,a,b);render()}
+  else if(a=='etedit'){V.editT=b.dataset.id;render()}
+  else if(a=='etdone'){V.editT=null;render();toast('Acceso actualizado.')}
+  else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();
+    if(!NT.name||!/^\S+@\S+\.\S+$/.test(NT.email)){toast('Escribe el nombre y un correo válido.');return}
+    if(!NT.access.length){toast('Elige al menos un grado o curso.');return}
+    D.teachers.push({id:'t'+Date.now(),...NT,access:[...NT.access]});toast(`Profesor creado. Prototipo: en la versión final le llega un correo a ${NT.email}.`);NT={name:'',email:'',access:[]};render()}
+  else if(a=='cls'){V.cls=+b.dataset.i;V.screen='salon';V.tab='resumen';V.ocr=null;render();scrollTo(0,0)}
+  else if(a=='tab'){V.tab=b.dataset.t;render()}
+  else if(a=='tabback'){V.screen='salon';V.tab='estudiantes';render();scrollTo(0,0)}
+  else if(a=='stu'){V.student=b.dataset.id;V.screen='student';render();scrollTo(0,0)}
+  else if(a=='ovreset'){delete D.overrides[b.dataset.k];render();toast('Se quitó el ajuste. Vuelve la nota calculada.')}
+  else if(a=='copy')copyPlanilla();
+  else if(a=='addtask'){C().tasks.unshift({isl:+$('#ti').value,lvl:+$('#tl').value,due:new Date($('#td').value+'T23:59').getTime(),created:NOW});render();toast('Tarea asignada. Las niñas la verán en su mapa.')}
+  else if(a=='deltask'){C().tasks.splice(+b.dataset.k,1);render()}
+  else if(a=='ocrdel'){V.ocr.splice(+b.dataset.k,1);render()}
+  else if(a=='ocradd'){V.ocr.push(mkUser('Nueva estudiante'));render()}
+  else if(a=='ocrsave'){const n=V.ocr.length;V.ocr=null;render();toast(`Prototipo: en la versión final se crean los ${n} usuarios en Firebase.`)}
+  else if(a=='print')toast('En la versión final se abre la hoja de tarjetas lista para imprimir.');
+  else if(a=='reset'){const s=C().students.find(x=>x.id==b.dataset.id);s.pics=[PICS[Math.floor(Math.random()*6)],PICS[Math.floor(Math.random()*6)],PICS[Math.floor(Math.random()*6)]];render();toast('Nueva clave para '+s.name.split(' ')[0]+'.')}
+  else if(a=='screset'){D.scale={...DEF_SCALE};render();toast('Escala restablecida.')}
+});
+function mkUser(name){const p=name.split(' ');return{name,user:slug(p[0])+'.'+slug(p[p.length>2?p.length-2:p.length-1]||'').slice(0,3),pics:[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)])}}
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id=='q'){V.q=t.value;const pos=t.selectionStart;render();const q=$('#q');q.focus();q.setSelectionRange(pos,pos)}
+  else if(t.id=='obs')D.notes[t.dataset.id]=t.value;
+  else if(t.dataset.ocr!=null){const k=+t.dataset.ocr;V.ocr[k]={...mkUser(t.value),pics:V.ocr[k].pics};t.closest('.orow').querySelector('code').textContent=V.ocr[k].user}
+  else if(t.dataset.sc){const v=parseFloat(t.value);if(v>=1&&v<=5){D.scale[t.dataset.sc]=v;const ex=$('#ex');if(ex)ex.textContent=f1((3*D.scale.p+D.scale.s+D.scale.a)/5)}}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id=='sort'){V.sort=t.value;render()}
+  else if(t.id=='ncg'||t.id=='ncy'){const prevAuto=NC.name===nextName(NC.grade,NC.year);NC.grade=+$('#ncg').value;NC.year=+$('#ncy').value;if(prevAuto||!$('#ncn').value.trim())NC.name=nextName(NC.grade,NC.year);else NC.name=$('#ncn').value;render()}
+  else if(t.dataset.ov){const v=parseFloat(t.value.replace(',','.'));if(t.value===''){delete D.overrides[t.dataset.ov]}else if(v>=1&&v<=5){D.overrides[t.dataset.ov]=Math.round(v*10)/10}else{toast('La nota debe estar entre 1,0 y 5,0.');return}render();toast('Nota ajustada. La nota final se recalculó.')}
+  else if(t.dataset.sc)toast('Escala guardada. Las notas se recalcularon.');
+  else if(t.id=='ph'&&t.files[0]){V.ocr='loading';render();setTimeout(()=>{V.ocr=OCR_SAMPLE.map(mkUser);render()},1600)}
+});
+render();
+}
+</script>
+</body>
+</html>
