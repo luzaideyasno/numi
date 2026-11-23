@@ -2,8 +2,8 @@
 
 Juego de matemáticas para niñas de 3.° a 5.° con retos, ayuda paso a paso y un panel para profesores y coordinación, conectado a Firebase.
 
-- **Juego:** https://luzaideyasno.github.io/numi/
-- **Panel docente:** https://luzaideyasno.github.io/numi/docente.html
+- **Juego:** https://juegaconnumi.com
+- **Panel docente:** https://juegaconnumi.com/docente.html
 
 | Archivo | Qué es |
 |---|---|
