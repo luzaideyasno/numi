@@ -36,7 +36,9 @@ service cloud.firestore {
       allow get: if signedIn() && (request.auth.uid == uid || canCourse(resource.data.courseId));
       allow list: if canCourse(resource.data.courseId);
       allow create: if canCourse(request.resource.data.courseId);
-      allow update, delete: if canCourse(resource.data.courseId);
+      allow update: if canCourse(resource.data.courseId)
+        || (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['wardrobe']));
+      allow delete: if canCourse(resource.data.courseId);
     }
 
     // Resultado de cada reto: lo guarda la niña; lo leen ella, su profesor y la coordinación

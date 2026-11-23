@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Numi — retos de mate</title>
+<script type="module" src="numi-db.js" onerror="window.NUMIDB_FAIL=1;dispatchEvent(new Event('numidbfail'))"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -125,6 +126,19 @@ input{width:100%;font:inherit;font-size:20px;padding:14px 18px;border-radius:18p
 .tskip{min-height:44px;padding:0 10px;color:var(--muted);font-weight:600;font-size:16px}
 .tdots{display:flex;gap:5px;flex:1;justify-content:center}.tdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.tdots i.on{background:var(--coral);width:20px;border-radius:9px}
 .tnext{min-height:48px;padding:0 18px;border-radius:16px;background:var(--coral);color:#fff;font-weight:700;font-size:17px;box-shadow:0 4px 0 #b72f53}
+/* ingreso de la niña */
+.slots{display:flex;gap:var(--s2);justify-content:center;margin:var(--s2) 0}
+.slot{width:64px;height:64px;border-radius:18px;border:3px dashed var(--line);background:var(--bg);display:grid;place-items:center}
+.slot.on{border-style:solid;border-color:var(--coral);background:var(--soft)}
+.slot svg,.picgrid svg{width:40px;height:40px}
+.picgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s2)}
+.picgrid button{min-height:72px;border-radius:18px;border:3px solid var(--line);background:var(--card);display:grid;place-items:center;box-shadow:0 4px 0 var(--line)}
+.picgrid button:active{transform:translateY(3px);box-shadow:none}
+.lerr{color:var(--coral);font-weight:700;text-align:center;margin-top:var(--s2);min-height:1.5em}
+.loading{min-height:70vh;display:grid;place-items:center;text-align:center;gap:var(--s2)}
+.task{display:flex;align-items:center;gap:var(--s2);background:var(--card);border:3px solid var(--gold);border-radius:22px;padding:var(--s2) var(--s3);margin-bottom:var(--s3)}
+.task div{flex:1}.task b{display:block;font-size:18px}.task small{color:var(--muted);font-size:15px}
+.task .next{padding:0 18px;min-height:50px;font-size:18px}
 /* celebración */
 .cheer{font-size:22px;font-weight:700;color:var(--teal);margin:0 0 var(--s2);animation:pop .6s}
 /* salir y continuar */
@@ -247,6 +261,12 @@ input{width:100%;font:inherit;font-size:20px;padding:14px 18px;border-radius:18p
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <filter id="gray"><feColorMatrix type="saturate" values="0.15"/></filter>
+<symbol id="i-estrella" viewBox="0 0 32 32"><path d="M16 3l4 8.5 9 1.2-6.6 6.2 1.7 9.1L16 23.6 7.9 28l1.7-9.1L3 12.7l9-1.2z" fill="#ffc93c" stroke="#b9800e" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+<symbol id="i-corazon" viewBox="0 0 32 32"><path d="M16 28C4 20 2 13 5 8.5 8 4 13 5 16 9c3-4 8-5 11-.5 3 4.5 1 11.5-11 19.5z" fill="#e9456f" stroke="#b72f53" stroke-width="1.5"/></symbol>
+<symbol id="i-luna" viewBox="0 0 32 32"><path d="M21 4a12 12 0 1 0 8 19A10 10 0 0 1 21 4z" fill="#a45fd1" stroke="#7a3da8" stroke-width="1.5"/></symbol>
+<symbol id="i-sol" viewBox="0 0 32 32"><circle cx="16" cy="16" r="7" fill="#ff9f1c"/><path d="M16 2v5M16 25v5M2 16h5M25 16h5M6 6l3.5 3.5M22.5 22.5 26 26M6 26l3.5-3.5M22.5 9.5 26 6" stroke="#ff9f1c" stroke-width="2.6" stroke-linecap="round"/></symbol>
+<symbol id="i-flor" viewBox="0 0 32 32"><g fill="#ff8fb8"><circle cx="16" cy="8" r="6"/><circle cx="24" cy="16" r="6"/><circle cx="16" cy="24" r="6"/><circle cx="8" cy="16" r="6"/></g><circle cx="16" cy="16" r="4.5" fill="#ffc93c"/></symbol>
+<symbol id="i-nube" viewBox="0 0 32 32"><path d="M9 25a6 6 0 0 1-.7-12A8 8 0 0 1 23.6 11 6 6 0 0 1 24 25z" fill="#3d8bd9" stroke="#22609e" stroke-width="1.5"/></symbol>
 <symbol id="spk" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
 <symbol id="spkoff" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
 <symbol id="hanger" viewBox="0 0 24 24"><path d="M12 7a2 2 0 1 1 2-2M12 7v2l9 7a1.5 1.5 0 0 1-1 3H4a1.5 1.5 0 0 1-1-3l9-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -273,7 +293,8 @@ const SPK=ICO('spk');
 
 let S={name:'',grade:3,stars:0,earnedAll:0,mute:false,mode:'write',prog:{},crowns:{},owned:[],eq:{mane:'arco',body:'blanco'},learned:0,started:false,tut:{}};
 try{const o=JSON.parse(localStorage.getItem('numi-v3')||localStorage.getItem('numi-v2')||'{}');delete o.best;Object.assign(S,o);if(o.name)S.started=true;if(!S.tut)S.tut={}}catch(e){}
-const save=()=>{try{localStorage.setItem('numi-v3',JSON.stringify(S))}catch(e){}};
+let STORE='numi-v3';
+const save=()=>{try{localStorage.setItem(STORE,JSON.stringify(S))}catch(e){}};
 
 /* ---------- Numi y su ropa ---------- */
 const MANES={arco:{n:'Arcoíris',c:['#e9456f','#13998b','#a45fd1','#ffc93c'],p:0},algodon:{n:'Algodón',c:['#ff7aa8','#ffb3cf','#e04f8a','#ffd6e7'],p:15},
@@ -563,6 +584,7 @@ function mapView(noHash){
   <p class="learned">Cosas que aprendiste con Numi: <b>${S.learned}</b></p></div>
   ${S.testAll?'<div class="wrap"><p class="note" style="margin:0 0 var(--s3)"><b>Modo prueba activo:</b> todas las islas están abiertas. <button class="link" data-act="adult">Desactivar</button></p></div>':''}
   ${savedFor()?`<div class="wrap"><div class="resume" style="--c:${W[S.saved.w].col}"><span class="blob">${W[S.saved.w].sym}</span><div><b>Tienes un reto a medias</b><small>${W[S.saved.w].name} · Nivel ${S.saved.l+1} · pregunta ${Math.min(5,S.saved.i+(S.saved.solved?2:1))} de 5</small></div><button class="next" data-act="resume">Continuar</button></div></div>`:''}
+  ${ACCT&&TASKS.length?`<div class="wrap">${TASKS.slice(0,3).map(t=>{const w=ORDER[t.isl];return `<div class="task"><span class="blob" style="--c:${W[w].col};width:54px;height:48px;font-size:24px;border-width:4px;flex:none">${W[w].sym}</span><div><b>Tarea de tu profe</b><small>${W[w].name} · Nivel ${t.lvl+1} · para el ${new Date(t.due).toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</small></div><button class="next" data-act="task" data-w="${w}" data-l="${t.lvl}">Hacer</button></div>`}).join('')}</div>`:''}
   <div class="map" id="map" style="height:${H}px">${seaDeco(H)}<svg class="path" viewBox="0 0 100 ${H}" preserveAspectRatio="none"><path d="${d}"/></svg>
   <span class="dec cloud" style="left:62%;top:0">${CLOUD}</span><span class="dec boat" style="left:84%;top:${top+gap*1.55}px">${BOAT}</span>
   <span class="dec fish" style="left:14%;top:${top+gap*2.5}px">${FISH('#ff8a5b')}</span><span class="dec fish f2" style="left:86%;top:${top+gap*3.6}px">${FISH('#a45fd1')}</span>
@@ -574,7 +596,7 @@ function mapView(noHash){
   <div class="avatar" style="left:${cx<50?cx+36:cx-36}%;top:${cy+10}px">${numi(S.eq,'happy')}</div></div>
   <div class="wrap" style="padding-bottom:var(--s4)"><button class="big-btn" id="go-btn" data-act="isle" data-w="${cur}">Seguir la aventura</button>
   <button class="big-btn gold" data-act="closet">Vestir a Numi · ★ ${S.stars}</button>
-  <p style="text-align:center;margin-top:var(--s3)"><button class="link" data-act="adult">Para adultos: revisar retos</button></p></div></section>`;
+  ${ACCT?'':'<p style="text-align:center;margin-top:var(--s3)"><button class="link" data-act="adult">Para adultos: revisar retos</button></p>'}</div></section>`;
   setTimeout(()=>tour([
     {t:`¡Bienvenida al Reino de Numi${S.name?', '+esc(S.name):''}! Soy Numi y te voy a mostrar cómo jugar.`},
     {sel:'#isle-suma',t:'Estas son las islas. Cada una tiene retos de un tema y 3 niveles. ¡Empezamos por la Isla de las Sumas!'},
@@ -629,6 +651,61 @@ const affordNew=()=>allItems().some(it=>!owns(it)&&it.p<=S.stars);
 const OK=['¡Excelente!','¡Eso es!','¡Lo lograste!','¡Qué genia!','¡Perfecto!','¡Increíble!'];
 const NO=['¡Casi! Revisa las casillas en rojo.','Mmm, mira otra vez las casillas en rojo. ¡Tú puedes!','Equivocarse es parte de aprender. Corrige las rojas.'];
 let G=null;
+/* ---------- cuenta de la niña (Firebase) ---------- */
+let DB=null,ACCT=null,TASKS=[],LG={user:'',pics:[],err:'',busy:false};
+const first=n=>String(n||'').split(' ')[0];
+const PIC=k=>`<svg viewBox="0 0 32 32"><use href="#i-${k}"/></svg>`;
+function waitDB(ms){return new Promise(r=>{if(window.NumiDB)return r(window.NumiDB);if(window.NUMIDB_FAIL)return r(null);const t=setTimeout(()=>r(null),ms);addEventListener('numidb',()=>{clearTimeout(t);r(window.NumiDB)},{once:true});addEventListener('numidbfail',()=>{clearTimeout(t);r(null)},{once:true})})}
+function loadingView(t){topEl.innerHTML='';app.innerHTML=`<div class="loading"><div><div class="numi-big" style="max-width:150px;margin:0 auto">${numi(S.eq,'happy')}</div><p style="font-weight:600;font-size:20px">${t||'Cargando…'}</p></div></div>`}
+function loginView(){
+  G=null;topEl.innerHTML='';
+  app.innerHTML=`<section class="hero"><div class="wrap"><div class="numi-big">${numi(S.eq,'happy')}</div>
+  <div><h1>¡Hola! ¿Quién eres?</h1><p class="lead">Escribe tu usuario y toca tus 3 dibujitos en orden. Están en la tarjeta que te dio tu profe.</p></div></div></section>
+  <div class="wrap"><section class="panel">
+  <div class="field"><label for="lu">Tu usuario</label><input id="lu" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ej.: valentina.res" value="${esc(LG.user)}"></div>
+  <div class="field"><p class="lab">Tus 3 dibujitos</p>
+  <div class="slots">${[0,1,2].map(i=>`<span class="slot ${LG.pics[i]?'on':''}">${LG.pics[i]?PIC(LG.pics[i]):''}</span>`).join('')}</div>
+  <div class="picgrid">${DB.PICS.map(k=>`<button data-act="lpic" data-k="${k}" aria-label="${k}">${PIC(k)}</button>`).join('')}</div>
+  <p style="text-align:center;margin-top:var(--s2)"><button class="link" data-act="lclear">Borrar dibujitos</button></p></div>
+  <button class="big-btn" data-act="login" ${LG.busy?'disabled':''}>${LG.busy?'Entrando…':'Entrar'}</button>
+  <p class="lerr" aria-live="polite">${esc(LG.err)}</p>
+  <p style="text-align:center;margin-top:var(--s2)"><button class="link" data-act="practice">Practicar sin cuenta</button></p></section></div>`;
+}
+async function doLogin(){
+  const nm=$('#lu');if(nm)LG.user=nm.value.trim();
+  if(!LG.user){LG.err='Escribe tu usuario.';return loginView()}
+  if(LG.pics.length<3){LG.err='Toca tus 3 dibujitos.';return loginView()}
+  LG.busy=true;LG.err='';loginView();
+  try{
+    await DB.studentLogin(LG.user,LG.pics);
+    const st=await DB.myStudent();
+    if(!st){await DB.logout();throw {code:'nostudent'}}
+    LG={user:'',pics:[],err:'',busy:false};await enterAccount(st);sound('yay');
+  }catch(e){
+    LG.busy=false;LG.pics=[];
+    LG.err=e.code==='nostudent'?'Esta cuenta no es de estudiante.':['auth/invalid-credential','auth/user-not-found','auth/wrong-password','auth/invalid-login-credentials','auth/invalid-email'].includes(e.code)?'Mmm, no encontré ese usuario o los dibujitos no son esos. ¡Inténtalo otra vez!':DB.message(e);
+    sound('oops');loginView();
+  }
+}
+async function enterAccount(st){
+  loadingView('Preparando tu reino…');
+  STORE='numi-v3-'+st.id;
+  const base={mute:S.mute,mode:'write',tut:{},saved:null};
+  try{Object.assign(base,JSON.parse(localStorage.getItem(STORE)||'{}'))}catch(e){}
+  const w=st.wardrobe||{};
+  S={...S,...base,name:first(st.name),grade:st.course?.grade||3,started:true,testAll:false,prog:{},crowns:{},
+     owned:w.owned||[],eq:w.eq||{mane:'arco',body:'blanco'},spent:w.spent||0};
+  let rs=[];try{rs=await DB.myResults()}catch(e){toast('No se pudo cargar tu progreso. Revisa el internet.')}
+  let earned=0,learned=0;
+  rs.forEach(r=>{const k=r.grade+'-'+ORDER[r.isl],L=S.prog[k]||[0,0,0];L[r.lvl]=Math.max(L[r.lvl]||0,r.stars||0);S.prog[k]=L;earned+=r.stars||0;learned+=(r.qs||[]).filter(q=>q=='a').length});
+  Object.keys(S.prog).forEach(k=>{if(S.prog[k].every(x=>x>0)){S.crowns[k]=true;earned+=10}});
+  S.earnedAll=earned;S.stars=earned-S.spent;S.learned=learned;
+  ACCT={st};
+  try{const ts=await DB.myTasks(st.courseId);TASKS=ts.filter(t=>!rs.some(r=>r.isl==t.isl&&r.lvl==t.lvl&&r.t>=t.created)).sort((a,b)=>a.due-b.due)}catch(e){TASKS=[]}
+  save();boot();
+}
+function saveWardrobe(){if(ACCT&&DB)DB.saveWardrobe({owned:S.owned,eq:S.eq,spent:S.spent||0}).catch(()=>{})}
+async function logoutAcc(){try{await DB.logout()}catch(e){}ACCT=null;TASKS=[];STORE='numi-v3';S={...S,name:'',saved:null};loginView()}
 /* ---------- historial: el botón atrás navega dentro de Numi ---------- */
 let skipHash=null,curHash='',routing=false,pendingBack=null,retoPushed=false;
 function setHash(h){
@@ -687,13 +764,13 @@ function home(){
   app.innerHTML=`<section class="hero"><div class="wrap"><div class="numi-big">${numi(S.eq,'happy')}</div>
   <div><h1>¡Hola! Soy Numi</h1><p class="lead">Ven conmigo a recorrer el Reino de Numi. Cada isla tiene retos de matemáticas, y si alguno se pone difícil, te enseño paso a paso.</p></div></div></section>
   <div class="wrap"><section class="panel">
-  <div class="field"><label for="nm">¿Cómo te llamas?</label><input id="nm" maxlength="16" autocomplete="off" placeholder="Escribe tu nombre" value="${esc(S.name)}"></div>
-  <div class="field"><p class="lab">¿En qué grado estás?</p><div class="chips">${[3,4,5].map(g=>`<button class="chip ${S.grade==g?'on':''}" data-act="grade" data-g="${g}">${g}.°</button>`).join('')}</div></div>
+  ${ACCT?`<div class="field"><p class="lab">Tu cuenta</p><p style="font-size:20px"><b>${esc(ACCT.st.name)}</b><br><span class="muted">${esc(ACCT.st.course?.name||'')} · usuario ${esc(ACCT.st.user)}</span></p></div>`:`<div class="field"><label for="nm">¿Cómo te llamas?</label><input id="nm" maxlength="16" autocomplete="off" placeholder="Escribe tu nombre" value="${esc(S.name)}"></div>
+  <div class="field"><p class="lab">¿En qué grado estás?</p><div class="chips">${[3,4,5].map(g=>`<button class="chip ${S.grade==g?'on':''}" data-act="grade" data-g="${g}">${g}.°</button>`).join('')}</div></div>`}
   <div class="field"><p class="lab">¿Cómo quieres responder?</p><div class="chips" style="--n:2">
   <button class="chip txt ${S.mode=='write'?'on':''}" data-act="mode" data-m="write">Escribir yo la respuesta</button>
   <button class="chip txt ${S.mode=='choice'?'on':''}" data-act="mode" data-m="choice">Elegir entre 4 opciones</button></div></div>
   <button class="big-btn" data-act="go">${S.started?'Volver al reino':'¡Vamos al reino!'}</button>
-  <p style="text-align:center;margin-top:var(--s3);display:flex;gap:var(--s3);justify-content:center;flex-wrap:wrap">${S.started?'<button class="link" data-act="retour">Ver el tutorial otra vez</button>':''}<button class="link" data-act="adult">Para adultos: revisar retos</button></p></section></div>`;
+  <p style="text-align:center;margin-top:var(--s3);display:flex;gap:var(--s3);justify-content:center;flex-wrap:wrap">${S.started?'<button class="link" data-act="retour">Ver el tutorial otra vez</button>':''}${ACCT?'<button class="link" data-act="logout">Salir de mi cuenta</button>':`<button class="link" data-act="adult">Para adultos: revisar retos</button>${DB?'<button class="link" data-act="tologin">Entrar con mi usuario</button>':''}`}</p></section></div>`;
 }
 
 function isleView(w){
@@ -743,9 +820,9 @@ function itemTap(t,k){
   const it=allItems().find(i=>i.t==t&&i.k==k);if(!it)return;
   if(!owns(it)){
     if(it.p>S.stars){toast(`Te faltan ${it.p-S.stars} estrellas. ¡Juega un reto en el reino para ganarlas!`);sound('oops');return}
-    S.stars-=it.p;S.owned.push(t+':'+k);S.eq[t]=k;save();sound('yay');confetti(25);toast(`¡Compraste ${it.n}! A Numi le encanta.`);
+    S.stars-=it.p;S.spent=(S.spent||0)+it.p;S.owned.push(t+':'+k);S.eq[t]=k;save();saveWardrobe();sound('yay');confetti(25);toast(`¡Compraste ${it.n}! A Numi le encanta.`);
   }else{
-    if(t=='mane'||t=='body')S.eq[t]=k;else S.eq[t]=S.eq[t]===k?null:k;save();sound('star');
+    if(t=='mane'||t=='body')S.eq[t]=k;else S.eq[t]=S.eq[t]===k?null:k;save();saveWardrobe();sound('star');
   }
   const y=scrollY;closetView();scrollTo(0,y);
 }
@@ -822,6 +899,7 @@ function feedback(m,mood,win){const fb=$('#fb');fb.className='fb on'+(win?' win'
   const a=$('.ask>.nm');if(a)a.innerHTML=numi(S.eq,mood)}
 function win(){
   const e=G.helped?1:G.tries==0?3:2;earn(e);
+  (G.outs=G.outs||[]).push(G.helped?'a':G.tries==0?'p':G.tries==1?'s':'m');
   G.streak=G.tries==0&&!G.helped?G.streak+1:0;
   let m=`${pick(OK)} Ganaste ${'★'.repeat(e)}.`;
   if(G.helped){S.learned++;save();m=`¡Aprendiste algo nuevo! Eso vale oro. Ganaste ★.`}
@@ -841,7 +919,7 @@ function makeRound(w,l,grade){
   for(let i=0;i<5;i++){let q,t=0;do{q=W[w].gen(g,bag[i]);t++}while((seen.has(q.ask)||(i&&out[i-1].ask===q.ask))&&t<12);seen.add(q.ask);out.push(q)}
   return out;
 }
-function start(w,l,g){g=g||S.grade;G={w,l:+l,g,m:S.mode,i:0,earned:[],streak:0,qs:makeRound(w,+l,g)};nextQ()}
+function start(w,l,g){g=g||S.grade;G={w,l:+l,g,m:S.mode,i:0,earned:[],outs:[],streak:0,qs:makeRound(w,+l,g)};nextQ()}
 function nextQ(){
   if(G.i>=5)return done();
   const g=G.l==0&&G.g>3?G.g-1:G.g;
@@ -894,6 +972,10 @@ function done(){
   const nx=ORDER[ORDER.indexOf(G.w)+1];
   if(same&&nx&&!wasOpenNext&&isOpen(nx))prizes.push(`<span class="blob" style="--c:${W[nx].col};width:52px;height:46px;font-size:24px;border-width:4px;flex:none">${W[nx].sym}</span><span>¡Desbloqueaste ${ISLE[nx]}!</span>`);
   if(affordNew())prizes.push(`<svg viewBox="0 0 24 24" style="width:40px;height:40px"><use href="#hanger"/></svg><span>¡Ya te alcanza para algo nuevo en el armario de Numi!</span>`);
+  if(ACCT&&DB&&same&&!G.preview){
+    DB.saveResult({courseId:ACCT.st.courseId,year:ACCT.st.year,grade:G.g,isl:ORDER.indexOf(G.w),lvl:G.l,qs:G.outs||[],stars:tot}).catch(()=>toast('Sin internet: tu resultado se guardará cuando vuelva la conexión.'));
+    TASKS=TASKS.filter(t=>!(t.isl==ORDER.indexOf(G.w)&&t.lvl==G.l));
+  }
   save();header();setHash('fin');
   const m=tot>=13?'¡Eres una estrella de las matemáticas!':tot>=9?'¡Muy bien! Cada vez lo haces mejor.':'¡Aprendiste muchísimo hoy! Practicar te hace más fuerte.';
   const nextL=G.l<2?`<button class="big-btn" data-act="level" data-w="${G.w}" data-l="${G.l+1}">Siguiente nivel</button>`:'';
@@ -925,6 +1007,13 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(!['ans','key','del','check','item'].includes(a))sound('tap');
   const nm=$('#nm');if(nm){S.name=nm.value.trim()}
+  if(a==='lpic'){if(LG.pics.length<3){LG.pics.push(b.dataset.k);const nm=$('#lu');if(nm)LG.user=nm.value;LG.err='';loginView()}return}
+  if(a==='lclear'){LG.pics=[];const nm=$('#lu');if(nm)LG.user=nm.value;loginView();return}
+  if(a==='login'){doLogin();return}
+  if(a==='practice'){ACCT=null;STORE='numi-v3';try{Object.assign(S,JSON.parse(localStorage.getItem(STORE)||'{}'))}catch(e){}boot();return}
+  if(a==='tologin'){G=null;loginView();return}
+  if(a==='logout'){logoutAcc();return}
+  if(a==='task'){start(b.dataset.w,b.dataset.l);scrollTo(0,0);return}
   if(a==='map'){if(G&&!G.over)persist();G=null;mapView();scrollTo(0,0)}
   else if(a==='settings'){G=null;home();scrollTo(0,0)}
   else if(a==='mute'){S.mute=!S.mute;save();header();if(!S.mute)sound('star')}
@@ -938,7 +1027,7 @@ document.addEventListener('click',e=>{
   else if(a==='pvw'){PV.w=b.dataset.w;PV.qs=null;adultView()}
   else if(a==='pvl'){PV.l=+b.dataset.l;PV.qs=null;adultView()}
   else if(a==='pvnew'){PV.qs=null;adultView()}
-  else if(a==='pvplay'){G={w:PV.w,l:PV.l,g:PV.g,m:S.mode,i:0,earned:[],streak:0,qs:PV.qs};PV.qs=null;nextQ();scrollTo(0,0)}
+  else if(a==='pvplay'){G={w:PV.w,l:PV.l,g:PV.g,m:S.mode,i:0,earned:[],outs:[],streak:0,qs:PV.qs,preview:true};PV.qs=null;nextQ();scrollTo(0,0)}
   else if(a==='testall'){S.testAll=!S.testAll;save();toast(S.testAll?'Modo prueba activado: todas las islas abiertas.':'Modo prueba desactivado.');adultView()}
   else if(a==='lvlock')toast('Primero termina el nivel anterior.');
   else if(a==='level'){savedFor(b.dataset.w,+b.dataset.l)?resume():start(b.dataset.w,b.dataset.l);scrollTo(0,0)}
@@ -962,6 +1051,7 @@ document.addEventListener('click',e=>{
   else if(a==='next'){G.i++;nextQ();scrollTo(0,0)}
 });
 document.addEventListener('keydown',e=>{
+  if(e.target.id==='lu'){if(e.key==='Enter')doLogin();return}
   if(e.target.id==='nm'){if(e.key==='Enter'){S.name=e.target.value.trim();S.started=true;save();mapView()}return}
   if(!G||S.mode!='write'||!$('#board'))return;
   if(/^[0-9]$/.test(e.key))typeDigit(e.key);
@@ -969,9 +1059,18 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Enter')check();
 });
 
-{const h=location.hash.slice(1);
- if(!h||h==='base'||h==='fin'){routing=true;S.started?mapView():home();routing=false}
+function boot(){const h=location.hash.slice(1);
+ if(!h||h==='base'||h==='fin'||h==='inicio'&&ACCT){routing=true;S.started?mapView():home();routing=false}
  else route(h,true);}
+(async()=>{
+  loadingView();
+  DB=await waitDB(5000);
+  if(!DB){boot();return}
+  const off=DB.onAuth(async user=>{off();
+    if(user){try{const st=await DB.myStudent();if(st)return enterAccount(st)}catch(e){}try{await DB.logout()}catch(e){}}
+    loginView();
+  });
+})();
 }
 </script>
 </body>

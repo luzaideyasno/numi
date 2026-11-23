@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Numi — panel docente</title>
+<script type="module" src="numi-db.js" onerror="window.NUMIDB_FAIL=1;dispatchEvent(new Event('numidbfail'))"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -152,6 +153,8 @@ details summary{cursor:pointer;font-weight:700;color:var(--coral);min-height:32p
 @media(max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.login{grid-template-columns:1fr}.login .art{padding:var(--s4)}.login .art svg{width:150px}.who span{display:none}}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 12px;padding-inline-start:9.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:9em;margin-inline-start:-9em;white-space:normal;color:var(--muted);font-size:13px;font-weight:700}.stack td:empty{display:none}.stack td.n{text-align:start}.card{padding:var(--s3)}.hrow{grid-template-columns:112px minmax(0,1fr) 34px;font-size:14px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
+#print{display:none}
+@media print{body>*:not(#print){display:none!important}#print{display:block}#print .cards{grid-template-columns:repeat(3,1fr);gap:10px}#print .ucard{break-inside:avoid;border:2px dashed #888;color:#2b1d3a;background:#fff}}
 </style>
 <script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
 </head>
@@ -181,50 +184,35 @@ const LVN=['Calentando','En marcha','Desafío'];
 const QN={p:'A la primera',s:'2.º intento',m:'3+ intentos',a:'Con ayuda'};
 const DEF_SCALE={p:5,s:4,m:3.5,a:3,alert:3.6};
 
-/* ---------- datos de ejemplo (en la versión final vienen de Firebase) ---------- */
-let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646};
-const pickR=a=>a[Math.floor(rnd()*a.length)];
-const FIRST=['Valentina','Sofía','Isabella','Mariana','Salomé','Luciana','Gabriela','Daniela','Sara','Antonella','Emily','Juliana','Manuela','Camila','María José','Ana Sofía','Paula','Victoria','Martina','Samantha','Laura','Valeria','Ximena','Abigail','Mía','Luisa','Celeste','Danna','Allison','Isabel','Amelia','Helena'];
-const LAST=['Restrepo','Gómez','Zapata','Arango','Muñoz','Ospina','Cardona','Henao','Montoya','Giraldo','Vélez','Ramírez','Correa','Londoño','Ríos','Agudelo','Mejía','Castaño','Betancur','Quintero'];
-const DAY=864e5,NOW=Date.now();
-const slug=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]+/g,'');
-function makeClass(id,name,n,off=0){
-  const used=new Set(),st=[];
-  for(let i=0;i<n;i++){
-    let fn,ln;do{fn=pickR(FIRST);ln=pickR(LAST)}while(used.has(fn+ln));used.add(fn+ln);
-    const skill=Math.min(.97,Math.max(.1,.22+rnd()*.72+off)),active=rnd(),retos=[],DIF=[0,.04,.1,.16,.26,.22];
-    const count=active<.12?0:Math.floor(3+rnd()*12),reach=Math.min(5,Math.floor(count/2.4));
-    for(let r=0;r<count;r++){
-      const isl=Math.min(reach,Math.floor(rnd()*(reach+1))),lvl=Math.min(2,Math.floor(rnd()*3));
-      const sk=Math.max(.08,skill-DIF[isl]-lvl*.05);
-      const qs=Array.from({length:5},()=>{const x=rnd();return x<sk?'p':x<sk+(1-sk)*.4?'s':x<sk+(1-sk)*.62?'m':'a'});
-      retos.push({isl,lvl,qs,t:NOW-(active<.3?8+Math.floor(rnd()*18):Math.floor(rnd()*7))*DAY-Math.floor(rnd()*8)*36e5});
-    }
-    retos.sort((a,b)=>b.t-a.t);
-    st.push({id:id+'-'+i,name:fn+' '+ln,user:slug(fn.split(' ')[0])+'.'+slug(ln).slice(0,3),pics:[pickR(PICS),pickR(PICS),pickR(PICS)],retos,stars:retos.reduce((a,r)=>a+r.qs.reduce((b,q)=>b+(q=='p'?3:q=='s'?2:1),0),0)});
-  }
-  st.sort((a,b)=>a.name.localeCompare(b.name,'es'));
-  return{id,name,students:st,tasks:[]};
-}
-const D={
-  classes:[makeClass('5a','5.°A',28),makeClass('5b','5.°B',26,-.22),makeClass('3a','3.°A',27,.12),makeClass('3b','3.°B',25,-.05),makeClass('4a','4.°A',29,.05),makeClass('4b','4.°B',24,-.3)],
-  teachers:[{id:'t1',name:'Luz Aide',email:'luzaide@colegio.edu.co',access:['5a','5b']},{id:'t2',name:'Marta Lucía',email:'martalucia@colegio.edu.co',access:['3a','3b']},
-   {id:'t3',name:'Jorge Iván',email:'jorgeivan@colegio.edu.co',access:['4a','4b']},{id:'t4',name:'Paola Andrea',email:'paolaandrea@colegio.edu.co',access:['4b','5b']}],
-  admin:{name:'Coordinación académica',email:'coordinacion@colegio.edu.co'},
-  scale:{...DEF_SCALE},overrides:{},notes:{}};
-D.classes.forEach(c=>{c.grade=+c.id[0];c.year=2026});
-D.year=2026;
-[['5a25','5.°A',25,5],['5b25','5.°B',24,5],['4a25','4.°A',26,4],['4b25','4.°B',23,4],['3a25','3.°A',27,3],['3b25','3.°B',22,3]].forEach(([id,n,k,g])=>{const c=makeClass(id,n,k,(g-4)*.04);c.grade=g;c.year=2025;c.closed=true;c.teacherNames=['Profesora 2025'];D.classes.push(c)});
-D.classes[0].tasks=[{isl:2,lvl:0,due:NOW+3*DAY,created:NOW-4*DAY},{isl:0,lvl:2,due:NOW-1*DAY,created:NOW-9*DAY}];
-D.classes[1].tasks=[{isl:1,lvl:1,due:NOW+5*DAY,created:NOW-2*DAY}];
+/* ---------- datos (Firebase) ---------- */
+const DAY=864e5;let NOW=Date.now();
+const slug=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]+/g,'');
+const byName=(a,b)=>a.name.localeCompare(b.name,'es');
+let DB=null,ME_P=null;
+const D={classes:[],teachers:[],year:new Date().getFullYear(),overrides:{},notes:{}};
 const GR=[3,4,5];
 const clsAvg=c=>avg(c.students.map(finalNota).filter(x=>x!=null));
 const clsIsl=(c,i)=>avg(c.students.map(s=>islaNota(s,i).v).filter(v=>v!=null));
-const teachersOf=id=>{const c=D.classes.find(x=>x.id==id);return c&&c.teacherNames?c.teacherNames:D.teachers.filter(t=>t.access.includes(id)).map(t=>t.name)};
+const teachersOf=id=>V.role=='admin'?D.teachers.filter(t=>(t.access||[]).includes(id)).map(t=>t.name):(ME_P&&(ME_P.access||[]).includes(id)?[ME_P.name]:[]);
+async function loadCourse(c){
+  const [st,rs,ts,ns,sc]=await Promise.all([DB.students(c.id),DB.results(c.id),DB.tasks(c.id),DB.notes(c.id),DB.scale(c.id)]);
+  c.scale={...DEF_SCALE,...(sc||{})};c.tasks=ts.sort((a,b)=>b.created-a.created);
+  const by={};rs.forEach(r=>{if(r.qs&&r.qs.length)(by[r.studentUid]=by[r.studentUid]||[]).push({isl:r.isl,lvl:r.lvl,qs:r.qs,t:r.t,c})});
+  c.students=st.map(x=>({...x,retos:(by[x.id]||[]).sort((a,b)=>b.t-a.t)})).sort(byName);
+  ns.forEach(n=>{D.notes[n.id]=n.obs||'';Object.entries(n.ov||{}).forEach(([i,v])=>{D.overrides[n.id+'|'+i]=v})});
+}
+async function loadAll(){
+  NOW=Date.now();D.overrides={};D.notes={};
+  const cs=await DB.courses(ME_P);
+  D.classes=cs.map(c=>({...c,grade:+c.grade,year:+c.year,closed:+c.year<D.year,students:[],tasks:[],scale:{...DEF_SCALE}}));
+  if(ME_P.role=='admin')D.teachers=(await DB.staff()).filter(u=>u.role=='teacher').map(u=>({...u,access:u.access||[]})).sort(byName);
+  await Promise.all(D.classes.map(loadCourse));
+}
+const fail=e=>{console.error(e);toast(DB?DB.message(e):String(e))};
 
 /* ---------- notas ---------- */
-const qv=q=>D.scale[q];
-const retoNota=r=>r.qs.reduce((a,q)=>a+qv(q),0)/r.qs.length;
+const qv=q=>(C()?C().scale:DEF_SCALE)[q];
+const retoNota=r=>r.qs.reduce((a,q)=>a+(r.c.scale[q]??DEF_SCALE[q]),0)/r.qs.length;
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
 function islaNota(s,i){const o=D.overrides[s.id+'|'+i];if(o!=null)return{v:o,adj:true};const rs=s.retos.filter(r=>r.isl==i);return{v:rs.length?avg(rs.map(retoNota)):null,adj:false}}
 function finalNota(s){const v=ISL.map((_,i)=>islaNota(s,i).v).filter(x=>x!=null);return avg(v)}
@@ -235,18 +223,21 @@ const last=s=>s.retos[0]?.t;
 const fdate=t=>new Date(t).toLocaleDateString('es-CO',{day:'numeric',month:'short'});
 
 /* ---------- estado de la vista ---------- */
-let V={role:'teacher',me:'t1',atab:'colegio',editT:null,screen:'login',cls:0,tab:'resumen',student:null,q:'',sort:'name',ocr:null};
+let V={role:'teacher',atab:'colegio',editT:null,screen:'boot',err:'',busy:false,cls:0,tab:'resumen',student:null,q:'',sort:'name',ocr:null};
 function toast(m){$('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
-const C=()=>D.classes[V.cls];
+const C=()=>D.classes[V.cls]||null;
 
-const ME=()=>D.teachers.find(t=>t.id==V.me);
-const myClasses=()=>V.role=='admin'?D.classes.filter(c=>c.year==D.year):D.classes.filter(c=>c.year==D.year&&ME().access.includes(c.id));
+const ME=()=>ME_P;
+const myClasses=()=>V.role=='admin'?D.classes.filter(c=>c.year==D.year):D.classes.filter(c=>c.year==D.year&&(ME_P.access||[]).includes(c.id));
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-function topbar(){const nm=V.role=='admin'?D.admin.name:ME().name;return `<header class="bar"><div class="wrap"><button class="brand" data-a="home">${NUMI}<span>Numi <small>${V.role=='admin'?'Súper usuario':'Panel docente'}</small></span></button>
-<span class="demo">Datos de ejemplo</span><button class="who" data-a="logout" title="Cerrar sesión"><span>${nm}</span><i class="av" style="${V.role=='admin'?'background:var(--ink)':''}">${ini(nm)}</i></button></div></header>`}
+function topbar(){const nm=ME_P?ME_P.name:'';return `<header class="bar"><div class="wrap"><button class="brand" data-a="home">${NUMI}<span>Numi <small>${V.role=='admin'?'Súper usuario':'Panel docente'}</small></span></button>
+<button class="btn ghost sm" data-a="refresh" title="Actualizar datos">Actualizar</button><button class="who" data-a="logout" title="Cerrar sesión"><span>${nm}</span><i class="av" style="${V.role=='admin'?'background:var(--ink)':''}">${ini(nm)}</i></button></div></header>`}
 
 function render(){
   if(V.screen=='login')return login();
+  if(V.screen=='boot'||V.screen=='loading'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div style="display:grid;place-items:center;gap:12px;text-align:center"><svg viewBox="0 0 120 120" style="width:120px"><use href="#numi"/></svg><div class="spin"></div><p class="muted">${V.screen=='boot'?'Conectando…':'Cargando cursos y notas…'}</p></div></div>`;return}
+  if(V.screen=='noaccess'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>Tu cuenta no tiene acceso al panel</h2><p class="muted" style="margin:8px 0 16px">Pide a la coordinación que te cree como profesor en Numi. Si eres la coordinación, revisa que exista el documento <b>users/${esc(DB.user()?.uid||'')}</b> con role "admin" en Firestore.</p><button class="btn" data-a="logout">Salir</button></div></div>`;return}
+  if(V.screen=='nodb'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>No se pudo conectar con Firebase</h2><p class="muted" style="margin-top:8px">Abre el panel desde su dirección publicada (GitHub Pages) y revisa la conexión a internet.</p></div></div>`;return}
   let body='';
   if(V.screen=='home')body=V.role=='admin'?adminHome():home();
   else if(V.screen=='student')body=student();
@@ -256,20 +247,29 @@ function render(){
 function login(){
   root.innerHTML=`<div class="login"><div class="art">${NUMI}</div><form id="lf">
   <h1>Hola, profe</h1><p class="muted">Entra para ver cómo van tus estudiantes en Numi.</p>
-  <div><label for="em">Correo del colegio</label><input id="em" type="email" value="${D.teachers[0].email}" autocomplete="username"></div>
-  <div><label for="pw">Contraseña</label><input id="pw" type="password" value="numi2026" autocomplete="current-password"></div>
-  <button class="btn" type="submit">Entrar</button>
-  <div class="card" style="background:var(--warn);border:0"><b>Prototipo: elige cómo quieres verlo</b>
-  <div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm" type="button" data-a="as" data-r="teacher">Profesora (Luz Aide)</button><button class="btn sm alt" type="button" data-a="as" data-r="admin">Súper usuario (coordinación)</button></div></div>
-  <p class="muted" style="font-size:14px">En la versión final cada cuenta entra con su correo y el sistema sabe si es profesor o súper usuario.</p></form></div>`;
+  <div><label for="em">Correo del colegio</label><input id="em" type="email" autocomplete="username" required value="${esc(V.email||'')}"></div>
+  <div><label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password" required></div>
+  <button class="btn" type="submit" ${V.busy?'disabled':''}>${V.busy?'Entrando…':'Entrar'}</button>
+  <p style="color:var(--coral);font-weight:700;min-height:1.5em" aria-live="polite">${esc(V.err||'')}</p>
+  <button class="link" type="button" data-a="forgot" style="justify-self:start">Olvidé mi contraseña</button>
+  <p class="muted" style="font-size:14px">Las cuentas de profesores las crea la coordinación desde este panel. Te llega un correo para crear tu contraseña.</p></form></div>`;
 }
-function salonCard(c){const i=D.classes.indexOf(c),st=c.students,act=st.filter(s=>last(s)&&NOW-last(s)<7*DAY).length,prom=clsAvg(c),need=st.filter(s=>{const n=finalNota(s);return n==null||n<D.scale.alert}).length;
+async function afterAuth(){
+  V.screen='loading';render();
+  try{
+    ME_P=await DB.me();
+    if(!ME_P){const uid=DB.user()?.uid||'';await DB.logout();V.err=`Esa cuenta no tiene acceso al panel. Pide a la coordinación que te cree como profesor. (UID: ${uid})`;V.screen='login';return render()}
+    V.role=ME_P.role=='admin'?'admin':'teacher';
+    await loadAll();V.screen='home';render();scrollTo(0,0);
+  }catch(e){fail(e);V.screen='noaccess';render()}
+}
+function salonCard(c){const i=D.classes.indexOf(c),st=c.students,act=st.filter(s=>last(s)&&NOW-last(s)<7*DAY).length,prom=clsAvg(c),need=st.filter(s=>{const n=finalNota(s);return n==null||n<c.scale.alert}).length;
   return `<button class="salon" data-a="cls" data-i="${i}"><h2>${c.name}</h2>${V.role=='admin'?`<span class="muted" style="font-weight:700;margin-top:-6px">${teachersOf(c.id).join(', ')||'Sin profesor asignado'}</span>`:''}${st.length?`<div class="big">${f1(prom)}</div><span class="muted" style="font-weight:700;margin-top:-8px">nota promedio del curso</span>`:`<span class="pill p-warn" style="justify-self:start">Sin estudiantes todavía</span><span class="muted" style="font-size:14px">El profesor las agrega desde Usuarios, con la foto de la lista.</span>`}
   <div class="row3"><span><b>${st.length}</b>estudiantes</span><span><b>${act}</b>jugaron esta semana</span><span><b>${need}</b>necesitan apoyo</span></div></button>`}
 function home(){
-  const t=ME(),gs=[...new Set(myClasses().map(c=>c.grade))].sort();
+  const t=ME_P,gs=[...new Set(myClasses().map(c=>c.grade))].sort();
   return `<div class="head"><div><h1>Buenos días, ${t.name}</h1><p class="muted">Matemáticas · ${gs.map(g=>g+'.°').join(' y ')}</p></div></div>
-  <div class="salones">${myClasses().map(salonCard).join('')}</div>`;
+  <div class="salones">${myClasses().map(salonCard).join('')||'<div class="card"><h3>Aún no tienes cursos asignados</h3><p class="muted" style="margin-top:6px">La coordinación te asigna los cursos desde su panel.</p></div>'}</div>`;
 }
 const TABS=[['resumen','Resumen'],['estudiantes','Estudiantes'],['notas','Planilla de notas'],['tareas','Tareas'],['usuarios','Usuarios'],['config','Configuración']];
 function salon(){
@@ -309,7 +309,7 @@ function accessPicker(sel,prefix){
   return GR.map(g=>{const cs=sortedCls().filter(c=>c.grade==g),allOn=cs.every(c=>sel.includes(c.id));
     return `<div class="acc"><button type="button" class="chipb ${allOn?'on':''}" data-a="${prefix}g" data-g="${g}">Todo ${g}.°</button>${cs.map(c=>`<button type="button" class="chipb ${sel.includes(c.id)?'on':''}" data-a="${prefix}c" data-c="${c.id}">${c.name}</button>`).join('')}</div>`}).join('');
 }
-let NT={name:'',email:'',access:[]},NC={grade:3,name:'',year:2026,teachers:[]},VY=2026,EC=null;
+let NT={name:'',email:'',access:[]},NC={grade:3,name:'',year:new Date().getFullYear(),teachers:[]},VY=new Date().getFullYear(),EC=null,ECT=[];
 const nextName=(g,y)=>{const used=D.classes.filter(c=>c.year==y&&c.grade==g).map(c=>c.name);for(const L of 'ABCDEFGH'){const n=`${g}.°${L}`;if(!used.includes(n))return n}return g+'.°'};
 function aCursos(){
   const years=[...new Set(D.classes.map(c=>c.year).concat(D.year))].sort(),cls=sortedCls(VY),next=D.year+1,hasNext=D.classes.some(c=>c.year==next);
@@ -325,7 +325,7 @@ function aCursos(){
   <section class="card"><div class="tools" style="margin-bottom:var(--s2);align-items:center"><h3 style="margin-right:auto">Cursos ${VY}</h3>${years.map(y=>`<button class="chipb ${VY==y?'on':''}" data-a="vy" data-y="${y}">${y}${y<D.year?' · cerrado':y>D.year?' · próximo':''}</button>`).join('')}</div>
   ${cls.length?GR.map(g=>{const cs=cls.filter(c=>c.grade==g);return cs.length?`<p class="lab" style="margin:var(--s3) 0 4px;font-weight:800">Grado ${g}.°</p>`+cs.map(c=>{const i=D.classes.indexOf(c);
     if(EC==c.id)return `<div class="trow2" style="display:block"><div class="fields"><div><label for="ecn">Nombre</label><input id="ecn" value="${esc(c.name)}"></div></div>
-      <label style="margin-top:var(--s2)">Profesores</label><div class="acc">${D.teachers.map(t=>`<button type="button" class="chipb ${t.access.includes(c.id)?'on':''}" data-a="ect" data-id="${t.id}" data-c="${c.id}">${esc(t.name)}</button>`).join('')}</div>
+      <label style="margin-top:var(--s2)">Profesores</label><div class="acc">${D.teachers.map(t=>`<button type="button" class="chipb ${ECT.includes(t.id)?'on':''}" data-a="ect" data-id="${t.id}" data-c="${c.id}">${esc(t.name)}</button>`).join('')}</div>
       <div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm alt" data-a="ecsave" data-c="${c.id}">Guardar</button><button class="btn sm ghost" data-a="ecx">Cancelar</button>
       ${c.students.length?`<span class="muted" style="font-size:13px;align-self:center">No se puede eliminar: tiene ${c.students.length} estudiantes.</span>`:`<button class="btn sm ghost" style="color:var(--coral)" data-a="ecdel" data-c="${c.id}">Eliminar curso</button>`}</div></div>`;
     return `<div class="trow2"><i class="av" style="background:${c.closed?'var(--muted)':'var(--teal)'}">${c.name.replace('.°','')}</i><div><b>${esc(c.name)}</b><small>${c.students.length} estudiantes · ${teachersOf(c.id).join(', ')||'<span style="color:var(--coral)">sin profesor</span>'}</small></div>
@@ -363,7 +363,7 @@ function resumen(){
   const byIsl=ISL.map((x,i)=>{const v=st.map(s=>islaNota(s,i).v).filter(v=>v!=null);return{...x,v:avg(v),cnt:v.length}});
   const bands=[['Superior','#13998b',n=>n>=4.6],['Alto','#7cc9a0',n=>n>=4&&n<4.6],['Básico','#f2b01e',n=>n>=3&&n<4],['Bajo','#e9456f',n=>n<3]].map(([l,c,fn])=>({l,c,n:notas.filter(fn).length}));
   const sin=st.length-notas.length;
-  const need=st.map(s=>{const n=finalNota(s),c=counts(s),r=[];if(n==null)r.push('No ha jugado');else{if(n<D.scale.alert)r.push('Nota '+f1(n));if(c.t&&c.a/c.t>.25)r.push(pct(c.a/c.t)+' con ayuda')}if(last(s)&&NOW-last(s)>7*DAY)r.push('Sin jugar hace más de una semana');return{s,r}}).filter(x=>x.r.length).slice(0,8);
+  const need=st.map(s=>{const n=finalNota(s),c=counts(s),r=[];if(n==null)r.push('No ha jugado');else{if(n<C().scale.alert)r.push('Nota '+f1(n));if(c.t&&c.a/c.t>.25)r.push(pct(c.a/c.t)+' con ayuda')}if(last(s)&&NOW-last(s)>7*DAY)r.push('Sin jugar hace más de una semana');return{s,r}}).filter(x=>x.r.length).slice(0,8);
   const recent=st.flatMap(s=>s.retos.map(r=>({s,r}))).sort((a,b)=>b.r.t-a.r.t).slice(0,7);
   return `<div class="kpis"><div class="kpi c1"><b>${f1(prom)}</b><span>Nota promedio</span></div><div class="kpi c2"><b>${week.length} de ${st.length}</b><span>Jugaron esta semana</span></div>
   <div class="kpi c3"><b>${pct(all.p/all.t)}</b><span>Respuestas a la primera</span></div><div class="kpi c4"><b>${pct(all.a/all.t)}</b><span>Usaron la ayuda de Numi</span></div></div>
@@ -410,7 +410,7 @@ function student(){
 function notas(){
   const st=C().students;
   return `<p class="muted" style="margin-bottom:var(--s2)">Nota de cada isla = promedio de sus retos. Nota final = promedio de las islas jugadas. Toca una estudiante para ajustar sus notas.</p>
-  <div class="tools"><button class="btn alt" data-a="copy">Copiar planilla para Excel</button></div>
+  <div class="tools"><button class="btn alt" data-a="copy">Copiar planilla para Excel</button><button class="btn ghost" data-a="csv">Descargar CSV</button></div>
   <div class="scroll"><table><thead><tr><th>Estudiante</th>${ISL.map(x=>`<th class="n">${x.n}</th>`).join('')}<th class="n">Final</th><th>Desempeño</th></tr></thead>
   <tbody>${st.map(s=>{const n=finalNota(s),d=desemp(n);return `<tr class="click" data-a="stu" data-id="${s.id}"><td style="white-space:nowrap"><b>${esc(s.name)}</b></td>${ISL.map((_,i)=>{const x=islaNota(s,i);return `<td class="n">${f1(x.v)}${x.adj?'<span class="adj">ajustada</span>':''}</td>`}).join('')}<td class="n nota">${f1(n)}</td><td><span class="pill ${d[1]}">${d[0]}</span></td></tr>`}).join('')}</tbody></table></div>`;
 }
@@ -439,20 +439,21 @@ function tareas(){
 }
 
 /* usuarios */
-const OCR_SAMPLE=['Abigail Restrepo Gómez','Ana Lucía Ospina','Antonella Cardona Ríos','Camila Henao Vélez','Daniela Zapata Muñoz','Emily Arango Mejía','Gabriela Montoya','Isabella Giraldo Correa','Juliana Londoño Ríos','Laura Agudelo Castaño','Luciana Betancur','Manuela Quintero Arango','María José Ramírez','Mariana Correa Henao'];
 function usuarios(){
   const c=C();
   let ocr='';
   if(V.ocr==='loading')ocr=`<div class="drop"><div class="spin" aria-label="Leyendo"></div><b>Numi está leyendo los nombres de la foto…</b></div>`;
-  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos.</p>
+  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos y quita lo que no sea un nombre.</p><button class="btn ghost sm" data-a="flip" style="margin-bottom:var(--s2)">La lista está como "Apellidos Nombres": voltear</button>
     <div class="olist">${V.ocr.map((r,k)=>`<div class="orow"><span class="onum">${k+1}</span><div class="ofld"><input value="${esc(r.name)}" data-ocr="${k}" aria-label="Nombre ${k+1}"><small>Usuario <code>${r.user}</code> · clave <span class="pic">${r.pics.map(pic).join('')}</span></small></div><button class="link" data-a="ocrdel" data-k="${k}" aria-label="Quitar">Quitar</button></div>`).join('')}</div>
-    <div class="tools" style="margin-top:var(--s3)"><button class="btn ghost" data-a="ocradd">Agregar estudiante</button><button class="btn alt" data-a="ocrsave">Crear ${V.ocr.length} usuarios</button></div></section>`;
-  else ocr=`<label class="drop" for="ph">${'<svg viewBox="0 0 24 24"><use href="#i-cam"/></svg>'}<b>Toma o sube una foto de la lista del salón</b><span class="muted">Numi lee los nombres y crea un usuario y una clave para cada niña.</span><span class="btn">Elegir foto</span><input id="ph" type="file" accept="image/*" capture="environment"></label>`;
+    <div class="tools" style="margin-top:var(--s3)"><button class="btn ghost" data-a="ocradd">Agregar estudiante</button><button class="btn alt" data-a="ocrsave">Crear ${V.ocr.length} usuarios</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
+  else if(V.ocr==='paste')ocr=`<section class="card"><h3>Escribe o pega la lista</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Un nombre por línea.</p><textarea id="plist" style="min-height:180px" placeholder="Valentina Restrepo Gómez&#10;Sofía Zapata Arango"></textarea><div class="tools" style="margin-top:var(--s2)"><button class="btn" data-a="pasteok">Revisar lista</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
+  else if(V.ocr&&V.ocr.saving)ocr=`<div class="drop"><div class="spin"></div><b>Creando usuarios… ${V.ocr.done} de ${V.ocr.total}</b><span class="muted">No cierres esta página.</span></div>`;
+  else ocr=`<label class="drop" for="ph">${'<svg viewBox="0 0 24 24"><use href="#i-cam"/></svg>'}<b>Toma o sube una foto de la lista del salón</b><span class="muted">Numi lee los nombres y crea un usuario y una clave para cada niña.</span><span class="btn">Elegir foto</span><input id="ph" type="file" accept="image/*"></label><p style="text-align:center"><button class="link" data-a="paste">O escribe / pega la lista de nombres</button></p>`;
   return `<div class="grid g2"><div class="grid">${ocr}
   <section class="card"><h3>Tarjetas de ingreso de ${c.name}</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Imprímelas y entrega a cada niña la suya.</p>
-  <div class="cards">${c.students.slice(0,6).map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${s.user}</code><span class="muted" style="font-size:13px">Clave</span><span class="pic">${s.pics.map(pic).join('')}</span></div>`).join('')}</div>
-  <div class="tools" style="margin-top:var(--s3)"><button class="btn" data-a="print">Imprimir las ${c.students.length} tarjetas</button></div></section>
-  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Nueva clave</button></td></tr>`).join('')}</tbody></table></details></section></div>
+  ${c.students.length?'':'<p class="muted">Cuando crees las estudiantes, aquí aparecen sus tarjetas.</p>'}<div class="cards">${c.students.slice(0,6).map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${s.user}</code><span class="muted" style="font-size:13px">Clave</span><span class="pic">${s.pics.map(pic).join('')}</span></div>`).join('')}</div>
+  <div class="tools" style="margin-top:var(--s3)"><button class="btn" data-a="print" ${c.students.length?'':'disabled'}>Imprimir las ${c.students.length} tarjetas</button></div></section>
+  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Nueva clave</button> <button class="link" data-a="delst" data-id="${s.id}" style="color:var(--muted)">Quitar</button></td></tr>`).join('')}</tbody></table></details></section></div>
   <section class="card" style="align-self:start"><h3>Así entra la niña</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Escribe su usuario y toca sus 3 dibujitos en orden. Es más fácil que una contraseña a esta edad.</p>
   <div class="phone"><svg viewBox="0 0 120 120" style="width:80px;margin:0 auto"><use href="#numi"/></svg><b style="font-family:Fredoka;font-size:22px">¡Hola! ¿Quién eres?</b><input value="${c.students[0]?.user||'valentina.res'}" aria-label="Usuario de ejemplo" readonly>
   <span style="font-weight:700;font-size:14px">Toca tus 3 dibujitos</span><div class="picks">${PICS.map(k=>`<span class="${(c.students[0]?.pics||['estrella','luna','flor']).includes(k)?'on':''}">${pic(k)}</span>`).join('')}</div>
@@ -463,74 +464,135 @@ function usuarios(){
 function config(){
   const rows=[['p','A la primera','Respondió bien en el primer intento.'],['s','Al segundo intento','Se equivocó una vez y corrigió.'],['m','Con tres o más intentos','Necesitó varios intentos, sin ayuda.'],['a','Con la ayuda paso a paso','Numi le explicó el procedimiento.']];
   return `<div class="grid g2"><section class="card"><h3>Escala de notas por pregunta</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Cambia los valores cuando quieras. Todas las notas se recalculan solas al instante.</p>
-  <div class="scale">${rows.map(([k,t,d])=>`<div class="srow"><div><b>${t}</b><small>${d}</small></div><input type="number" min="1" max="5" step="0.1" inputmode="decimal" value="${D.scale[k]}" data-sc="${k}" aria-label="${t}"></div>`).join('')}</div>
-  <p class="muted" style="font-size:14px;margin-top:var(--s2)">Nota de cada reto = promedio de sus 5 preguntas.</p></section>
-  <section class="card"><h3>Alertas</h3><div class="srow" style="border:0"><div><b>Avisarme si la nota baja de</b><small>Aparece en "Necesitan apoyo" del resumen.</small></div><input type="number" min="1" max="5" step="0.1" value="${D.scale.alert}" data-sc="alert" aria-label="Nota mínima para alerta"></div>
+  <div class="scale">${rows.map(([k,t,d])=>`<div class="srow"><div><b>${t}</b><small>${d}</small></div><input type="number" min="1" max="5" step="0.1" inputmode="decimal" value="${C().scale[k]}" data-sc="${k}" aria-label="${t}"></div>`).join('')}</div>
+  <p class="muted" style="font-size:14px;margin-top:var(--s2)">Nota de cada reto = promedio de sus 5 preguntas. Esta escala aplica a ${esc(C().name)}.</p></section>
+  <section class="card"><h3>Alertas</h3><div class="srow" style="border:0"><div><b>Avisarme si la nota baja de</b><small>Aparece en "Necesitan apoyo" del resumen.</small></div><input type="number" min="1" max="5" step="0.1" value="${C().scale.alert}" data-sc="alert" aria-label="Nota mínima para alerta"></div>
   <h3 style="margin-top:var(--s4)">Ejemplo con la escala actual</h3><p style="margin-top:6px">Un reto con 3 a la primera, 1 al segundo intento y 1 con ayuda:</p>
-  <p class="nota" style="font-size:30px;color:var(--coral)" id="ex">${f1((3*D.scale.p+D.scale.s+D.scale.a)/5)}</p>
+  <p class="nota" style="font-size:30px;color:var(--coral)" id="ex">${f1((3*C().scale.p+C().scale.s+C().scale.a)/5)}</p>
   <button class="btn ghost" data-a="screset" style="margin-top:var(--s3)">Volver a los valores iniciales</button></section></div>`;
 }
 
 /* ---------- eventos ---------- */
-document.addEventListener('submit',e=>{if(e.target.id=='lf'){e.preventDefault();V.role='teacher';V.screen='home';render();scrollTo(0,0)}});
-document.addEventListener('click',e=>{
+let saveT={};
+const later=(k,fn,ms=700)=>{clearTimeout(saveT[k]);saveT[k]=setTimeout(()=>fn().catch(fail),ms)};
+function noteSave(sid){const c=C(),ov={};ISL.forEach((_,i)=>{const v=D.overrides[sid+'|'+i];if(v!=null)ov[i]=v});return DB.setNote(sid,c.id,{obs:D.notes[sid]||'',ov})}
+function cardsHTML(list){return list.map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${esc(s.user)}</code><span class="muted" style="font-size:13px">Clave: toca en orden</span><span class="pic">${s.pics.map(pic).join('')}</span><span class="muted" style="font-size:12px">${location.host}${location.pathname.replace('docente.html','')}</span></div>`).join('')}
+function printCards(list){let p=$('#print');if(!p){p=document.createElement('div');p.id='print';document.body.appendChild(p)}p.innerHTML=`<div class="cards">${cardsHTML(list)}</div>`;setTimeout(()=>window.print(),100)}
+function parseNames(text){
+  const bad=/^(lista|grado|curso|nombre|nombres|apellidos|n[°ºo.]|no\.?|docente|profesor|institucion|colegio|periodo|año|fecha|asignatura)/i;
+  return [...new Set(text.split(/\n+/).map(l=>l.replace(/[0-9|_\-–.,;:()\[\]{}"'*#°º]+/g,' ').replace(/\s+/g,' ').trim())
+    .filter(l=>l.length>=5&&l.split(' ').length>=2&&/^[A-Za-zÁÉÍÓÚÑÜáéíóúñü ]+$/.test(l)&&!bad.test(l))
+    .map(l=>l.toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase())))];
+}
+function uniqUsers(rows){const seen={};D.classes.forEach(c=>c.students.forEach(s=>seen[s.user]=1));rows.forEach(r=>{let u=r.user,n=1;while(seen[u]){n++;u=r.user+n}r.user=u;seen[u]=1});return rows}
+async function runOCR(file){
+  V.ocr='loading';render();
+  try{
+    if(!window.Tesseract)await new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)});
+    const r=await Tesseract.recognize(file,'spa');
+    const names=parseNames(r.data.text);
+    if(!names.length){V.ocr=null;render();toast('No pude leer nombres en la foto. Prueba con más luz o escribe la lista.');return}
+    V.ocr=uniqUsers(names.map(mkUser));render();
+  }catch(e){V.ocr=null;render();toast('No se pudo leer la foto. Puedes escribir o pegar la lista.')}
+}
+async function saveStudents(){
+  const c=C(),rows=V.ocr.filter(r=>r.name.trim().split(' ').length>=1&&r.name.trim());
+  V.ocr={saving:true,done:0,total:rows.length};render();
+  const made=[];let errors=0;
+  for(const r of rows){try{const st=await DB.createStudent(c.id,c.year,{name:r.name.trim(),user:r.user,pics:r.pics});made.push({...st,retos:[]})}catch(e){errors++;console.error(e);if(e.code=='permission-denied'){fail(e);break}}V.ocr.done++;render()}
+  c.students.push(...made);c.students.sort(byName);V.ocr=null;render();
+  toast(errors?`Se crearon ${made.length} usuarios. ${errors} no se pudieron crear.`:`¡Listo! Se crearon ${made.length} usuarios. Ya puedes imprimir las tarjetas.`);
+}
+document.addEventListener('submit',async e=>{if(e.target.id!='lf')return;e.preventDefault();
+  V.email=$('#em').value.trim();const pw=$('#pw').value;V.busy=true;V.err='';login();
+  try{await DB.staffLogin(V.email,pw);V.busy=false;await afterAuth()}catch(err){V.busy=false;V.err=DB.message(err);login()}});
+document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  try{
   if(a=='home'){V.screen='home';render();scrollTo(0,0)}
-  else if(a=='as'){V.role=b.dataset.r;V.me='t1';V.screen='home';V.atab='colegio';render();scrollTo(0,0)}
-  else if(a=='logout'){V.screen='login';render()}
-  else if(a=='atab'){V.atab=b.dataset.t;V.editT=null;EC=null;render()}
-  else if(a=='vy'){VY=+b.dataset.y;EC=null;render()}
-  else if(a=='nct'){NC.name=$('#ncn').value;const k=NC.teachers.indexOf(b.dataset.id);k>=0?NC.teachers.splice(k,1):NC.teachers.push(b.dataset.id);render()}
-  else if(a=='ncsave'){NC.name=$('#ncn').value.trim();if(!NC.name){toast('Escribe el nombre del curso.');return}
-    if(D.classes.some(c=>c.year==NC.year&&c.name.toLowerCase()==NC.name.toLowerCase())){toast(`Ya existe ${NC.name} en ${NC.year}.`);return}
-    const id='c'+Date.now();D.classes.push({id,name:NC.name,grade:NC.grade,year:NC.year,students:[],tasks:[]});
-    NC.teachers.forEach(t=>D.teachers.find(x=>x.id==t).access.push(id));VY=NC.year;toast(`Curso ${NC.name} creado para ${NC.year}.`);NC={grade:NC.grade,name:'',year:NC.year,teachers:[]};render()}
-  else if(a=='copyyear'){const nx=D.year+1;sortedCls(D.year).forEach(c=>D.classes.push({id:'c'+nx+c.id,name:c.name,grade:c.grade,year:nx,students:[],tasks:[]}));VY=nx;toast(`Listo: cursos de ${nx} creados. Asígnales profesor con "Editar".`);render()}
-  else if(a=='ecedit'){EC=b.dataset.c;render()}
-  else if(a=='ecx'){EC=null;render()}
-  else if(a=='ect'){const t=D.teachers.find(x=>x.id==b.dataset.id),k=t.access.indexOf(b.dataset.c);k>=0?t.access.splice(k,1):t.access.push(b.dataset.c);const n=$('#ecn').value;render();$('#ecn').value=n}
-  else if(a=='ecsave'){const c=D.classes.find(x=>x.id==b.dataset.c),n=$('#ecn').value.trim();if(n)c.name=n;EC=null;render();toast('Curso actualizado.')}
-  else if(a=='ecdel'){const k=D.classes.findIndex(x=>x.id==b.dataset.c);D.teachers.forEach(t=>t.access=t.access.filter(i=>i!=b.dataset.c));D.classes.splice(k,1);EC=null;render();toast('Curso eliminado.')}
-  else if(a=='copyall')copyAll();
-  else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;toggleAccess(NT.access,a,b);render()}
-  else if(a=='etg'||a=='etc'){toggleAccess(D.teachers.find(t=>t.id==V.editT).access,a,b);render()}
-  else if(a=='etedit'){V.editT=b.dataset.id;render()}
-  else if(a=='etdone'){V.editT=null;render();toast('Acceso actualizado.')}
-  else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();
-    if(!NT.name||!/^\S+@\S+\.\S+$/.test(NT.email)){toast('Escribe el nombre y un correo válido.');return}
-    if(!NT.access.length){toast('Elige al menos un grado o curso.');return}
-    D.teachers.push({id:'t'+Date.now(),...NT,access:[...NT.access]});toast(`Profesor creado. Prototipo: en la versión final le llega un correo a ${NT.email}.`);NT={name:'',email:'',access:[]};render()}
+  else if(a=='logout'){await DB.logout();ME_P=null;D.classes=[];V.screen='login';V.err='';render()}
+  else if(a=='forgot'){const em=$('#em').value.trim();if(!em){V.err='Escribe tu correo y vuelve a tocar "Olvidé mi contraseña".';return login()}await DB.resetPassword(em);V.err='';login();toast('Te enviamos un correo para crear una contraseña nueva.')}
+  else if(a=='refresh'){V.screen='loading';render();await loadAll();V.screen=V.screen=='loading'?'home':V.screen;V.screen='home';render();toast('Datos actualizados.')}
   else if(a=='cls'){V.cls=+b.dataset.i;V.screen='salon';V.tab='resumen';V.ocr=null;render();scrollTo(0,0)}
   else if(a=='tab'){V.tab=b.dataset.t;render()}
   else if(a=='tabback'){V.screen='salon';V.tab='estudiantes';render();scrollTo(0,0)}
   else if(a=='stu'){V.student=b.dataset.id;V.screen='student';render();scrollTo(0,0)}
-  else if(a=='ovreset'){delete D.overrides[b.dataset.k];render();toast('Se quitó el ajuste. Vuelve la nota calculada.')}
+  else if(a=='atab'){V.atab=b.dataset.t;V.editT=null;EC=null;render()}
+  else if(a=='copyall')copyAll();
+  else if(a=='ovreset'){delete D.overrides[b.dataset.k];render();await noteSave(b.dataset.k.split('|')[0]);toast('Se quitó el ajuste. Vuelve la nota calculada.')}
   else if(a=='copy')copyPlanilla();
-  else if(a=='addtask'){C().tasks.unshift({isl:+$('#ti').value,lvl:+$('#tl').value,due:new Date($('#td').value+'T23:59').getTime(),created:NOW});render();toast('Tarea asignada. Las niñas la verán en su mapa.')}
-  else if(a=='deltask'){C().tasks.splice(+b.dataset.k,1);render()}
+  else if(a=='csv'){const st=C().students,rows=[['Estudiante',...ISL.map(x=>x.n),'Final','Desempeño']],fx=v=>v==null?'':v.toFixed(1).replace('.',',');st.forEach(s=>{const n=finalNota(s);rows.push([s.name,...ISL.map((_,i)=>fx(islaNota(s,i).v)),fx(n),desemp(n)[0]])});
+    const blob=new Blob(['\ufeff'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n')],{type:'text/csv'});const l=document.createElement('a');l.href=URL.createObjectURL(blob);l.download=`notas-${slug(C().name)}-${C().year}.csv`;l.click()}
+  else if(a=='addtask'){const d={courseId:C().id,isl:+$('#ti').value,lvl:+$('#tl').value,due:new Date($('#td').value+'T23:59').getTime(),created:Date.now()};const id=await DB.createTask(d);C().tasks.unshift({id,...d});render();toast('Tarea asignada. Las niñas la verán en su mapa.')}
+  else if(a=='deltask'){const t=C().tasks[+b.dataset.k];await DB.deleteTask(t.id);C().tasks.splice(+b.dataset.k,1);render()}
+  else if(a=='paste'){V.ocr='paste';render()}
+  else if(a=='pasteok'){const names=parseNames($('#plist').value);if(!names.length){toast('Escribe al menos un nombre completo por línea.');return}V.ocr=uniqUsers(names.map(mkUser));render()}
+  else if(a=='ocrcancel'){V.ocr=null;render()}
+  else if(a=='flip'){V.ocr=uniqUsers(V.ocr.map(r=>{const w=r.name.split(' ');const k=w.length>=4?2:w.length==3?2:1;return{...mkUser([...w.slice(k),...w.slice(0,k)].join(' ')),pics:r.pics}}));render()}
   else if(a=='ocrdel'){V.ocr.splice(+b.dataset.k,1);render()}
-  else if(a=='ocradd'){V.ocr.push(mkUser('Nueva estudiante'));render()}
-  else if(a=='ocrsave'){const n=V.ocr.length;V.ocr=null;render();toast(`Prototipo: en la versión final se crean los ${n} usuarios en Firebase.`)}
-  else if(a=='print')toast('En la versión final se abre la hoja de tarjetas lista para imprimir.');
-  else if(a=='reset'){const s=C().students.find(x=>x.id==b.dataset.id);s.pics=[PICS[Math.floor(Math.random()*6)],PICS[Math.floor(Math.random()*6)],PICS[Math.floor(Math.random()*6)]];render();toast('Nueva clave para '+s.name.split(' ')[0]+'.')}
-  else if(a=='screset'){D.scale={...DEF_SCALE};render();toast('Escala restablecida.')}
+  else if(a=='ocradd'){V.ocr.push(mkUser('Nueva Estudiante'));render()}
+  else if(a=='ocrsave'){if(!V.ocr.length)return;await saveStudents()}
+  else if(a=='print'){printCards(C().students)}
+  else if(a=='reset'){const s=C().students.find(x=>x.id==b.dataset.id),np=[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)]);await DB.changeStudentPics(s,np);s.pics=np;render();toast('Nueva clave para '+s.name.split(' ')[0]+'. Imprime su tarjeta otra vez.')}
+  else if(a=='delst'){const s=C().students.find(x=>x.id==b.dataset.id);if(!confirm(`¿Quitar a ${s.name} del curso? Sus resultados quedan guardados.`))return;await DB.deleteStudent(s.id);C().students=C().students.filter(x=>x.id!=s.id);render();toast('Estudiante quitada.')}
+  else if(a=='screset'){C().scale={...DEF_SCALE};render();await DB.setScale(C().id,C().scale);toast('Escala restablecida.')}
+  /* súper usuario: profesores */
+  else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;toggleAccess(NT.access,a,b);render()}
+  else if(a=='etg'||a=='etc'){toggleAccess(D.teachers.find(t=>t.id==V.editT).access,a,b);render()}
+  else if(a=='etedit'){V.editT=b.dataset.id;render()}
+  else if(a=='etdone'){const t=D.teachers.find(x=>x.id==V.editT);await DB.setAccess(t.id,t.access);V.editT=null;render();toast('Acceso actualizado.')}
+  else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();
+    if(!NT.name||!/^\S+@\S+\.\S+$/.test(NT.email)){toast('Escribe el nombre y un correo válido.');return}
+    if(!NT.access.length){toast('Elige al menos un grado o curso.');return}
+    b.disabled=true;const uid=await DB.createTeacher(NT);D.teachers.push({id:uid,role:'teacher',...NT,access:[...NT.access]});D.teachers.sort(byName);
+    toast(`Profesor creado. Le llegó un correo a ${NT.email} para crear su contraseña.`);NT={name:'',email:'',access:[]};render()}
+  /* súper usuario: cursos */
+  else if(a=='vy'){VY=+b.dataset.y;EC=null;render()}
+  else if(a=='nct'){NC.name=$('#ncn').value;const k=NC.teachers.indexOf(b.dataset.id);k>=0?NC.teachers.splice(k,1):NC.teachers.push(b.dataset.id);render()}
+  else if(a=='ncsave'){NC.name=$('#ncn').value.trim();if(!NC.name){toast('Escribe el nombre del curso.');return}
+    if(D.classes.some(c=>c.year==NC.year&&c.name.toLowerCase()==NC.name.toLowerCase())){toast(`Ya existe ${NC.name} en ${NC.year}.`);return}
+    b.disabled=true;const id=await DB.createCourse({name:NC.name,grade:NC.grade,year:NC.year});
+    D.classes.push({id,name:NC.name,grade:NC.grade,year:NC.year,closed:NC.year<D.year,students:[],tasks:[],scale:{...DEF_SCALE}});
+    for(const tid of NC.teachers){const t=D.teachers.find(x=>x.id==tid);t.access=[...t.access,id];await DB.setAccess(t.id,t.access)}
+    VY=NC.year;toast(`Curso ${NC.name} creado para ${NC.year}.`);NC={grade:NC.grade,name:'',year:NC.year,teachers:[]};render()}
+  else if(a=='copyyear'){const nx=D.year+1;b.disabled=true;for(const c of sortedCls(D.year)){const id=await DB.createCourse({name:c.name,grade:c.grade,year:nx});D.classes.push({id,name:c.name,grade:c.grade,year:nx,closed:false,students:[],tasks:[],scale:{...DEF_SCALE}})}VY=nx;toast(`Listo: cursos de ${nx} creados. Asígnales profesor con "Editar".`);render()}
+  else if(a=='ecedit'){EC=b.dataset.c;ECT=D.teachers.filter(t=>t.access.includes(EC)).map(t=>t.id);render()}
+  else if(a=='ecx'){EC=null;render()}
+  else if(a=='ect'){const k=ECT.indexOf(b.dataset.id);k>=0?ECT.splice(k,1):ECT.push(b.dataset.id);const n=$('#ecn').value;render();$('#ecn').value=n}
+  else if(a=='ecsave'){const c=D.classes.find(x=>x.id==b.dataset.c),n=$('#ecn').value.trim();b.disabled=true;
+    if(n&&n!=c.name){await DB.updateCourse(c.id,{name:n});c.name=n}
+    for(const t of D.teachers){const has=t.access.includes(c.id),want=ECT.includes(t.id);if(has!=want){t.access=want?[...t.access,c.id]:t.access.filter(i=>i!=c.id);await DB.setAccess(t.id,t.access)}}
+    EC=null;render();toast('Curso actualizado.')}
+  else if(a=='ecdel'){const c=D.classes.find(x=>x.id==b.dataset.c);if(!confirm(`¿Eliminar el curso ${c.name} (${c.year})?`))return;
+    await DB.deleteCourse(c.id);for(const t of D.teachers){if(t.access.includes(c.id)){t.access=t.access.filter(i=>i!=c.id);await DB.setAccess(t.id,t.access)}}
+    D.classes=D.classes.filter(x=>x.id!=c.id);EC=null;render();toast('Curso eliminado.')}
+  }catch(err){fail(err);render()}
 });
-function mkUser(name){const p=name.split(' ');return{name,user:slug(p[0])+'.'+slug(p[p.length>2?p.length-2:p.length-1]||'').slice(0,3),pics:[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)])}}
+function mkUser(name){const p=name.trim().split(/\s+/);return{name:name.trim(),user:slug(p[0])+'.'+slug(p[p.length>2?p.length-2:p.length-1]||'').slice(0,3),pics:[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)])}}
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id=='q'){V.q=t.value;const pos=t.selectionStart;render();const q=$('#q');q.focus();q.setSelectionRange(pos,pos)}
-  else if(t.id=='obs')D.notes[t.dataset.id]=t.value;
+  else if(t.id=='obs'){const sid=t.dataset.id;D.notes[sid]=t.value;later('obs'+sid,()=>noteSave(sid),900)}
   else if(t.dataset.ocr!=null){const k=+t.dataset.ocr;V.ocr[k]={...mkUser(t.value),pics:V.ocr[k].pics};t.closest('.orow').querySelector('code').textContent=V.ocr[k].user}
-  else if(t.dataset.sc){const v=parseFloat(t.value);if(v>=1&&v<=5){D.scale[t.dataset.sc]=v;const ex=$('#ex');if(ex)ex.textContent=f1((3*D.scale.p+D.scale.s+D.scale.a)/5)}}
+  else if(t.dataset.sc){const v=parseFloat(t.value.replace(',','.'));if(v>=1&&v<=5){C().scale[t.dataset.sc]=v;const ex=$('#ex');if(ex)ex.textContent=f1((3*C().scale.p+C().scale.s+C().scale.a)/5);later('sc'+C().id,()=>DB.setScale(C().id,C().scale),700)}}
 });
-document.addEventListener('change',e=>{
+document.addEventListener('change',async e=>{
   const t=e.target;
+  try{
   if(t.id=='sort'){V.sort=t.value;render()}
   else if(t.id=='ncg'||t.id=='ncy'){const prevAuto=NC.name===nextName(NC.grade,NC.year);NC.grade=+$('#ncg').value;NC.year=+$('#ncy').value;if(prevAuto||!$('#ncn').value.trim())NC.name=nextName(NC.grade,NC.year);else NC.name=$('#ncn').value;render()}
-  else if(t.dataset.ov){const v=parseFloat(t.value.replace(',','.'));if(t.value===''){delete D.overrides[t.dataset.ov]}else if(v>=1&&v<=5){D.overrides[t.dataset.ov]=Math.round(v*10)/10}else{toast('La nota debe estar entre 1,0 y 5,0.');return}render();toast('Nota ajustada. La nota final se recalculó.')}
+  else if(t.dataset.ov){const v=parseFloat(t.value.replace(',','.'));if(t.value===''){delete D.overrides[t.dataset.ov]}else if(v>=1&&v<=5){D.overrides[t.dataset.ov]=Math.round(v*10)/10}else{toast('La nota debe estar entre 1,0 y 5,0.');return}render();await noteSave(t.dataset.ov.split('|')[0]);toast('Nota ajustada. La nota final se recalculó.')}
   else if(t.dataset.sc)toast('Escala guardada. Las notas se recalcularon.');
-  else if(t.id=='ph'&&t.files[0]){V.ocr='loading';render();setTimeout(()=>{V.ocr=OCR_SAMPLE.map(mkUser);render()},1600)}
+  else if(t.id=='ph'&&t.files[0])runOCR(t.files[0]);
+  }catch(err){fail(err)}
 });
+/* arranque */
+render();
+(async()=>{
+  DB=await new Promise(r=>{if(window.NumiDB)return r(window.NumiDB);if(window.NUMIDB_FAIL)return r(null);const t=setTimeout(()=>r(null),8000);addEventListener('numidb',()=>{clearTimeout(t);r(window.NumiDB)},{once:true});addEventListener('numidbfail',()=>{clearTimeout(t);r(null)},{once:true})});
+  if(!DB){V.screen='nodb';return render()}
+  const off=DB.onAuth(u=>{off();if(u)afterAuth();else{V.screen='login';render()}});
+})();
 render();
 }
 </script>

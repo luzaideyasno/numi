@@ -1,22 +1,30 @@
 # Numi 🦄 — matemáticas jugando
 
-Juego de matemáticas para niñas de 3.° a 5.° con retos, ayuda paso a paso y un panel para profesores y coordinación.
+Juego de matemáticas para niñas de 3.° a 5.° con retos, ayuda paso a paso y un panel para profesores y coordinación, conectado a Firebase.
+
+- **Juego:** https://luzaideyasno.github.io/numi/
+- **Panel docente:** https://luzaideyasno.github.io/numi/docente.html
 
 | Archivo | Qué es |
 |---|---|
-| `index.html` | El juego de las niñas (Reino de Numi) |
-| `docente.html` | Panel de profesores y súper usuario (prototipo con datos de ejemplo) |
-| `firebase-config.js` | Datos del proyecto de Firebase (hay que pegarlos) |
-| `firestore.rules` | Reglas de seguridad de la base de datos |
+| `index.html` | El juego. Las niñas entran con usuario + 3 dibujitos; también se puede practicar sin cuenta |
+| `docente.html` | Panel de profesores y súper usuario (coordinación) |
+| `numi-db.js` | Conexión con Firebase (Authentication + Firestore), compartida por los dos |
+| `firebase-config.js` | Datos del proyecto Firebase `numi-b3d93` |
+| `firestore.rules` | Reglas de seguridad: pegarlas en Firestore → Reglas → Publicar |
 
-## Estado
-- Juego: listo. El progreso se guarda en el navegador de cada dispositivo.
-- Panel docente: prototipo aprobado. Falta conectarlo a Firebase (inicio de sesión, cursos, estudiantes y notas en línea).
+## Datos en Firestore
+- `users/{uid}`: personal del colegio. `role`: `admin` (coordinación) o `teacher`; `access`: lista de cursos del profesor.
+- `courses/{id}`: `name`, `grade`, `year`.
+- `students/{uid}`: `name`, `user`, `pics` (clave de 3 dibujitos), `courseId`, `year`, `wardrobe` (ropa de Numi).
+- `results/{id}`: un reto jugado: `studentUid`, `courseId`, `isl` (0–5), `lvl` (0–2), `qs` (por pregunta: `p` a la primera, `s` segundo intento, `m` tres o más, `a` con ayuda), `stars`, `t`.
+- `settings/{courseId}`: escala de notas del curso. `notes/{studentUid}`: notas ajustadas (`ov`) y observaciones (`obs`). `tasks/{id}`: tareas con fecha límite.
 
-## Publicar en GitHub Pages
-Settings → Pages → Source: **Deploy from a branch** → Branch: **main** / **(root)** → Save.
-Queda en `https://USUARIO.github.io/numi/` (juego) y `https://USUARIO.github.io/numi/docente.html` (panel).
+## Primer uso
+1. Crear al coordinador en Authentication (correo y clave), copiar su UID y crear en Firestore `users/{UID}` con `role: "admin"`, `name` y `email`.
+2. El coordinador entra a `docente.html`, crea los cursos del año y los profesores (les llega un correo para crear su contraseña).
+3. Cada profesor crea sus estudiantes desde la foto de la lista (o escribiéndola) e imprime las tarjetas de ingreso.
 
 ## Decisiones
-- Cada año lectivo la coordinación crea los cursos. Las estudiantes se crean de nuevo cada año desde la foto de la lista (no se promueven).
-- Notas de 1 a 5 por pregunta: 5,0 a la primera · 4,0 segundo intento · 3,5 tres o más · 3,0 con ayuda (editable).
+- Cada año lectivo la coordinación crea los cursos; las estudiantes se crean de nuevo cada año.
+- Notas de 1 a 5 por pregunta: 5,0 a la primera · 4,0 segundo intento · 3,5 tres o más · 3,0 con ayuda (cada curso puede cambiarla).
