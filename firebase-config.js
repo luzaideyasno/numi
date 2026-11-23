@@ -1,12 +1,13 @@
-// Configuración de Firebase para Numi.
-// Reemplaza estos valores con los de tu proyecto:
-// Consola de Firebase → ⚙️ Configuración del proyecto → Tus apps → App web → firebaseConfig.
-// Estos datos no son secretos (identifican el proyecto); la seguridad la dan las reglas de Firestore.
+// Configuración de Firebase para Numi (proyecto numi-b3d93).
+// Estos datos no son secretos: identifican el proyecto. La seguridad la dan las reglas de Firestore (firestore.rules).
 export const firebaseConfig = {
-  apiKey: "PEGAR_AQUI",
-  authDomain: "PEGAR_AQUI.firebaseapp.com",
-  projectId: "PEGAR_AQUI",
-  storageBucket: "PEGAR_AQUI.appspot.com",
-  messagingSenderId: "PEGAR_AQUI",
-  appId: "PEGAR_AQUI"
+  apiKey: "AIzaSyDmn9EpMegqHUOBKfmCCruTrBi8zOmWUXU",
+  authDomain: "numi-b3d93.firebaseapp.com",
+  projectId: "numi-b3d93",
+  storageBucket: "numi-b3d93.firebasestorage.app",
+  messagingSenderId: "556837617529",
+  appId: "1:556837617529:web:b46dc65216f357eaf479a8"
 };
+
+// Dominio interno para las cuentas de las niñas (entran solo con usuario y dibujitos).
+export const STUDENT_DOMAIN = "estudiantes.numi.app";
