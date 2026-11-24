@@ -15,4 +15,4 @@ export const STUDENT_DOMAIN = "estudiantes.numi.app";
 // Clave del sitio de reCAPTCHA (es pública). La usa App Check para que Gemini lea la foto de la lista.
 // RECAPTCHA_ENTERPRISE: true si la clave es de reCAPTCHA Enterprise; false si es reCAPTCHA v3.
 export const RECAPTCHA_SITE_KEY = '';
-export const RECAPTCHA_ENTERPRISE = true;
+export const RECAPTCHA_ENTERPRISE = false;
