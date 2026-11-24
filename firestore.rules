@@ -60,7 +60,9 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.studentUid == request.auth.uid
         && get(/databases/$(db)/documents/students/$(request.auth.uid)).data.courseId == request.resource.data.courseId;
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin();
+      // El profesor del curso puede borrarlos cuando elimina a una estudiante que se retiró
+      allow delete: if isAdmin() || canCourse(resource.data.courseId);
     }
 
     // Notas ajustadas a mano y observaciones del profesor (una por niña)

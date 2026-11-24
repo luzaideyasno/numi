@@ -477,7 +477,10 @@ function student(){
   <p class="muted" style="font-size:14px;margin-top:6px">Se guarda solo. Solo la ven los profesores.</p>
   <h3 style="margin-top:var(--s4)">Cómo respondió</h3><div class="legend" style="margin-top:var(--s2)">${['p','s','m','a'].map(k=>`<span class="q q-${k}">${QN[k]}: ${c[k]}</span>`).join('')}</div></section></div>
   <section class="card" style="margin-top:var(--s3)"><h3>Historial de retos</h3>${s.retos.length?s.retos.map(r=>`<div class="reto"><div><b>${ISL[r.isl].n} · Nivel ${r.lvl+1}: ${LVN[r.lvl]}</b><br><small>${fdate(r.t)} · ${ago(r.t)}</small>
-  <div class="qs" style="margin-top:6px">${r.qs.map((q,k)=>`<span class="q q-${q}">P${k+1} · ${QN[q]} · ${f1(qv(q))}</span>`).join('')}</div></div><span class="nota" style="font-size:22px">${f1(retoNota(r))}</span></div>`).join(''):'<p class="muted">Todavía no ha jugado.</p>'}</section>`;
+  <div class="qs" style="margin-top:6px">${r.qs.map((q,k)=>`<span class="q q-${q}">P${k+1} · ${QN[q]} · ${f1(qv(q))}</span>`).join('')}</div></div><span class="nota" style="font-size:22px">${f1(retoNota(r))}</span></div>`).join(''):'<p class="muted">Todavía no ha jugado.</p>'}</section>
+  ${C().closed?'':`<section class="card" style="margin-top:var(--s3);border:2px solid var(--coral)"><h3>¿Se retiró del colegio?</h3>
+  <p class="muted" style="font-size:14px;margin:6px 0 var(--s2)">Elimina a ${esc(s.name.split(' ')[0])} del todo: ya no podrá entrar a Numi, sus retos y notas se borran y deja de contar en los promedios del salón. Si vuelve, la puedes agregar otra vez desde Usuarios y quedará con el mismo usuario.</p>
+  <button class="btn" data-a="delst" data-id="${s.id}">Eliminar estudiante</button></section>`}`;
 }
 
 /* planilla */
@@ -527,7 +530,7 @@ function usuarios(){
   <section class="card"><h3>Tarjetas de ingreso de ${c.name}</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Imprímelas y entrega a cada niña la suya.</p>
   ${c.students.length?'':'<p class="muted">Cuando crees las estudiantes, aquí aparecen sus tarjetas.</p>'}<div class="cards">${c.students.slice(0,6).map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${s.user}</code><span class="muted" style="font-size:13px">Clave</span><span class="pic">${s.pics.map(pic).join('')}</span></div>`).join('')}</div>
   <div class="tools" style="margin-top:var(--s3)"><button class="btn" data-a="print" ${c.students.length?'':'disabled'}>Imprimir las ${c.students.length} tarjetas</button></div></section>
-  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Nueva clave</button> <button class="link" data-a="delst" data-id="${s.id}" style="color:var(--muted)">Quitar</button></td></tr>`).join('')}</tbody></table></details></section></div>
+  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Nueva clave</button> ${C().closed?'':`<button class="link" data-a="delst" data-id="${s.id}" style="color:var(--coral)">Eliminar</button>`}</td></tr>`).join('')}</tbody></table></details></section></div>
   <section class="card" style="align-self:start"><h3>Así entra la niña</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Escribe su usuario y toca sus 3 dibujitos en orden. Es más fácil que una contraseña a esta edad.</p>
   <div class="phone"><svg viewBox="0 0 120 120" style="width:80px;margin:0 auto"><use href="#numi"/></svg><b style="font-family:Fredoka;font-size:22px">¡Hola! ¿Quién eres?</b><input value="${c.students[0]?.user||'valentina.res'}" aria-label="Usuario de ejemplo" readonly>
   <span style="font-weight:700;font-size:14px">Toca tus 3 dibujitos</span><div class="picks">${PICS.map(k=>`<span class="${(c.students[0]?.pics||['estrella','luna','flor']).includes(k)?'on':''}">${pic(k)}</span>`).join('')}</div>
@@ -660,7 +663,13 @@ document.addEventListener('click',async e=>{
   else if(a=='ocrsave'){if(!V.ocr.length)return;await saveStudents()}
   else if(a=='print'){printCards(C().students)}
   else if(a=='reset'){const s=C().students.find(x=>x.id==b.dataset.id),np=[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)]);await DB.changeStudentPics(s,np);s.pics=np;render();toast('Nueva clave para '+s.name.split(' ')[0]+'. Imprime su tarjeta otra vez.')}
-  else if(a=='delst'){const s=C().students.find(x=>x.id==b.dataset.id);if(!confirm(`¿Quitar a ${s.name} del curso? Sus resultados quedan guardados.`))return;await DB.deleteStudent(s.id);C().students=C().students.filter(x=>x.id!=s.id);render();toast('Estudiante quitada.')}
+  else if(a=='delst'){const s=C().students.find(x=>x.id==b.dataset.id);if(!s)return;
+    if(!confirm(`¿Eliminar a ${s.name} del todo?\n\n• Ya no podrá entrar a Numi.\n• Se borran sus ${s.retos.length} retos, sus notas y observaciones.\n• Deja de contar en los promedios del salón.\n\nEsto no se puede deshacer.`))return;
+    b.disabled=true;b.textContent='Eliminando…';clearTimeout(saveT['obs'+s.id]);
+    const r=await DB.removeStudent(s);
+    C().students=C().students.filter(x=>x.id!=s.id);delete D.notes[s.id];ISL.forEach((_,i)=>delete D.overrides[s.id+'|'+i]);
+    if(V.screen=='student'){V.screen='salon';V.tab='estudiantes';V.student=null;scrollTo(0,0)}
+    render();toast(r.resultsBlocked?`${s.name.split(' ')[0]} fue eliminada y ya no cuenta en los promedios. Falta publicar las reglas nuevas de Firestore para borrar también sus retos guardados.`:`${s.name.split(' ')[0]} fue eliminada del todo.`)}
   else if(a=='screset'){C().scale={...DEF_SCALE};render();await DB.setScale(C().id,C().scale);toast('Escala restablecida.')}
   /* súper usuario: profesores */
   else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;NT.phone=$('#ntp').value;toggleAccess(NT.access,a,b);render()}

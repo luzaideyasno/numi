@@ -2,7 +2,7 @@
 // La usan el juego (index.html) y el panel docente (docente.html).
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
-  sendPasswordResetEmail, updatePassword } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+  sendPasswordResetEmail, updatePassword, deleteUser } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc,
   updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 import { firebaseConfig, STUDENT_DOMAIN } from "./firebase-config.js";
@@ -145,6 +145,31 @@ export const NumiDB = {
     throw last || new Error('No se pudo leer la lista');
   },
   deleteStudent: id => deleteDoc(doc(db, 'students', id)),
+  // Elimina del todo a una estudiante que se retira: su cuenta de ingreso, sus resultados, sus notas y su ficha.
+  // Así ya no puede entrar, no cuenta en los promedios y, si se vuelve a agregar, recupera el mismo usuario.
+  async removeStudent(st) {
+    const out = { account: false, results: 0, resultsBlocked: false };
+    // 1) Cuenta de ingreso: se entra como ella en una app secundaria (la clave sale de sus dibujitos) y se borra
+    const sec = secondary();
+    try {
+      const c = await signInWithEmailAndPassword(getAuth(sec), studentEmail(st.user, st.year), studentPass(st.pics, st.year));
+      await deleteUser(c.user); out.account = true;
+    } catch (e) { if (!BAD_LOGIN.includes(e.code)) throw e; } // ya no existía: se sigue
+    finally { await deleteApp(sec); }
+    // 2) Resultados de sus retos
+    try {
+      const rs = await getDocs(query(collection(db, 'results'), where('courseId', '==', st.courseId), where('studentUid', '==', st.id)));
+      for (let i = 0; i < rs.docs.length; i += 400) {
+        const b = writeBatch(db); rs.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit();
+      }
+      out.results = rs.size;
+    } catch (e) { if (e.code === 'permission-denied') out.resultsBlocked = true; else throw e; }
+    // 3) Notas ajustadas y observaciones (puede que no tenga)
+    try { await deleteDoc(doc(db, 'notes', st.id)); } catch (e) { if (e.code !== 'permission-denied' && e.code !== 'not-found') throw e; }
+    // 4) Ficha de la estudiante
+    await deleteDoc(doc(db, 'students', st.id));
+    return out;
+  },
   createTask: d => addDoc(collection(db, 'tasks'), d).then(r => r.id),
   deleteTask: id => deleteDoc(doc(db, 'tasks', id)),
   async scale(courseId) { const s = await getDoc(doc(db, 'settings', courseId)); return s.exists() ? s.data() : null; },
