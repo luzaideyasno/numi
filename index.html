@@ -361,10 +361,28 @@ function sound(name){
     const a=new Audio(SND[name]);a.volume=.8;const p=a.play();if(p)p.catch(()=>{});
   }catch(e){}
 }
+/* Voz de Numi: elige la voz en español más natural del dispositivo (o la que escogieron en ajustes) */
+function esVoices(){try{return speechSynthesis.getVoices().filter(v=>/^es/i.test(v.lang))}catch(e){return []}}
+function voiceScore(v){
+  const n=(v.name+' '+v.voiceURI).toLowerCase(),l=v.lang.toLowerCase().replace('_','-');let s=0;
+  if(/natural|neural|online|premium|enhanced|wavenet/.test(n))s+=40;
+  if(/google/.test(n))s+=25;
+  if(/paulina|mónica|monica|sabina|helena|dalia|elvira|lucia|lucía|camila|salome|salomé|paloma|marisol|female|mujer/.test(n))s+=12;
+  if(/es-(co|419|mx|us)/.test(l))s+=10;else if(l=='es-es')s+=4;
+  if(/compact|espeak|robot/.test(n))s-=30;
+  if(v.localService===false)s+=3;
+  return s;
+}
+function pickVoice(){
+  const vs=esVoices();if(!vs.length)return null;
+  if(S.voice&&S.voice!=='off'){const v=vs.find(v=>v.voiceURI===S.voice||v.name===S.voice);if(v)return v}
+  return vs.slice().sort((a,b)=>voiceScore(b)-voiceScore(a))[0];
+}
 function speak(t){
   try{const ss=window.speechSynthesis;if(!ss)return false;ss.cancel();
-    const u=new SpeechSynthesisUtterance(t.replace(/<[^>]+>/g,''));u.lang='es-CO';u.rate=.92;u.pitch=1.25;
-    const v=ss.getVoices().find(v=>/^es/i.test(v.lang));if(v)u.voice=v;ss.speak(u);return true}catch(e){return false}
+    const u=new SpeechSynthesisUtterance(t.replace(/<[^>]+>/g,''));const v=pickVoice();
+    if(v){u.voice=v;u.lang=v.lang}else u.lang='es-CO';
+    u.rate=.95;u.pitch=1.05;ss.speak(u);return true}catch(e){return false}
 }
 try{speechSynthesis.getVoices()}catch(e){}
 
@@ -597,18 +615,20 @@ function mapView(noHash){
   <div class="wrap" style="padding-bottom:var(--s4)"><button class="big-btn" id="go-btn" data-act="isle" data-w="${cur}">Seguir la aventura</button>
   <button class="big-btn gold" data-act="closet">Vestir a Numi · ★ ${S.stars}</button>
   ${ACCT?'':'<p style="text-align:center;margin-top:var(--s3)"><button class="link" data-act="adult">Para adultos: revisar retos</button></p>'}</div></section>`;
-  setTimeout(()=>tour([
+  setTimeout(()=>mapTour(),300);
+}
+
+/* ---------- tutorial de primera vez ---------- */
+function mapTour(force){tour([
     {t:`¡Bienvenida al Reino de Numi${S.name?', '+esc(S.name):''}! Soy Numi y te voy a mostrar cómo jugar.`},
     {sel:'#isle-suma',t:'Estas son las islas. Cada una tiene retos de un tema y 3 niveles. ¡Empezamos por la Isla de las Sumas!'},
     {sel:'#isle-resta',t:'Las islas con nube y candado se abren cuando terminas el nivel 1 de la isla anterior.',mood:'think'},
     {sel:'#tot',t:'Aquí guardas tus estrellas. Ganas 3 si aciertas a la primera, 2 al segundo intento y 1 si aprendes con mi ayuda.'},
     {sel:'[data-act=closet]',t:'Con las estrellas me puedes vestir en el armario: melenas, coronas, gafas… ¡y hasta alas!'},
-    {sel:'#go-btn',t:'Cuando quieras jugar, toca aquí. ¡Vamos a aprender jugando!'}],'map'),300);
-}
-
-/* ---------- tutorial de primera vez ---------- */
-function tour(steps,flag){
-  if(S.tut[flag]||document.querySelector('.tour'))return;
+    {sel:'#tourbtn',t:'Si se te olvida algo, toca este botón de pregunta y te lo explico otra vez.'},
+    {sel:'#go-btn',t:'Cuando quieras jugar, toca aquí. ¡Vamos a aprender jugando!'}],'map',force)}
+function tour(steps,flag,force){
+  if((!force&&S.tut[flag])||document.querySelector('.tour'))return;
   let i=0;const ov=document.createElement('div');ov.className='tour';document.body.appendChild(ov);
   const end=()=>{S.tut[flag]=true;save();ov.remove();removeEventListener('resize',draw);try{speechSynthesis.cancel()}catch(e){}};
   function draw(){
@@ -618,12 +638,12 @@ function tour(steps,flag){
     <div class="trow"><button class="tskip" data-tour="skip">Saltar</button><span class="tdots">${steps.map((_,k)=>`<i class="${k==i?'on':''}"></i>`).join('')}</span>
     <button class="tnext" data-tour="next">${i==steps.length-1?'¡Entendido!':'Siguiente'}</button></div></div></div>`;
   }
-  function go(){const el=steps[i].sel&&document.querySelector(steps[i].sel);if(el)el.scrollIntoView({block:'center'});requestAnimationFrame(draw);if(i>0&&!S.mute)speak(steps[i].t)}
+  function go(){const el=steps[i].sel&&document.querySelector(steps[i].sel);if(el)el.scrollIntoView({block:'center'});requestAnimationFrame(draw);if(i>0&&!S.mute&&S.voice!=='off')speak(steps[i].t)}
   ov.addEventListener('click',e=>{e.stopPropagation();const t=e.target.closest('[data-tour]');if(!t)return;sound('tap');
     if(t.dataset.tour=='skip')return end();i++;if(i>=steps.length)return end();go()});
   addEventListener('resize',draw);go();
 }
-function playTour(){
+function playTour(force){
   const wr=S.mode=='write';
   tour([
     {sel:'.ask',t:'Aquí te hago la pregunta. Si tocas "Escuchar a Numi", te la leo en voz alta.'},
@@ -631,7 +651,8 @@ function playTour(){
       {sel:'.pad',t:'Escribe con estos números. "Borrar" quita el último y "Comprobar" revisa tu respuesta.'}]
      :[{sel:'.opts',t:'Toca la respuesta que creas correcta.'}]),
     {sel:'.help-btn',t:'Si no sabes cómo hacerlo, pídeme ayuda y te explico paso a paso. ¡Equivocarse está bien!',mood:'think'},
-    {sel:'.exit',t:'Si te quieres ir, toca "Salir". Yo guardo todo y luego sigues donde quedaste.'}],'play');
+    {sel:'.exit',t:'Si te quieres ir, toca "Salir". Yo guardo todo y luego sigues donde quedaste.'},
+    {sel:'#tourbtn',t:'Y si se te olvida algo, toca este botón de pregunta y te lo explico otra vez.'}],'play',force);
 }
 
 /* ---------- reino ---------- */
@@ -771,6 +792,7 @@ function askExit(){
 function header(){
   topEl.innerHTML=`<header class="top"><button class="logo" data-act="map">${NM()}<span>Numi</span></button>
   <span class="tot" id="tot" aria-label="Estrellas"><b>★</b> ${S.stars}</span>
+  <button class="ibtn" id="tourbtn" data-act="tourhelp" aria-label="Ver el tutorial" style="font-weight:700;font-size:22px">?</button>
   <button class="ibtn" data-act="closet" aria-label="Armario de Numi">${ICO('hanger')}</button>
   <button class="ibtn" data-act="mute" aria-label="${S.mute?'Activar sonido':'Silenciar'}">${ICO(S.mute?'spkoff':'spk')}</button></header>`;
 }
@@ -783,6 +805,10 @@ function home(){
   <div class="wrap"><section class="panel">
   ${ACCT?`<div class="field"><p class="lab">Tu cuenta</p><p style="font-size:20px"><b>${esc(ACCT.st.name)}</b><br><span class="muted">${esc(ACCT.st.course?.name||'')} · usuario ${esc(ACCT.st.user)}</span></p></div>`:`<div class="field"><label for="nm">¿Cómo te llamas?</label><input id="nm" maxlength="16" autocomplete="off" placeholder="Escribe tu nombre" value="${esc(S.name)}"></div>
   <div class="field"><p class="lab">¿En qué grado estás?</p><div class="chips">${[3,4,5].map(g=>`<button class="chip ${S.grade==g?'on':''}" data-act="grade" data-g="${g}">${g}.°</button>`).join('')}</div></div>`}
+  <div class="field"><label for="vz">Voz de Numi</label><div style="display:flex;gap:var(--s2)"><select id="vz" style="flex:1;font:inherit;font-size:17px;padding:12px 14px;border-radius:18px;border:3px solid var(--line);background:var(--bg);color:var(--ink)">
+  <option value="" ${!S.voice?'selected':''}>Automática (la más natural)</option><option value="off" ${S.voice==='off'?'selected':''}>Sin voz en el tutorial</option>
+  ${esVoices().map(v=>`<option value="${esc(v.voiceURI)}" ${S.voice===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select>
+  <button class="chip txt" data-act="testvoice" style="flex:none;padding:0 16px;min-height:52px">Probar</button></div></div>
   <div class="field"><p class="lab">¿Cómo quieres responder?</p><div class="chips" style="--n:2">
   <button class="chip txt ${S.mode=='write'?'on':''}" data-act="mode" data-m="write">Escribir yo la respuesta</button>
   <button class="chip txt ${S.mode=='choice'?'on':''}" data-act="mode" data-m="choice">Elegir entre 4 opciones</button></div></div>
@@ -1026,6 +1052,8 @@ document.addEventListener('click',e=>{
   const nm=$('#nm');if(nm){S.name=nm.value.trim()}
   if(a==='stayapp'){document.querySelector('.modal')?.remove();const h=curHash&&curHash!=='salir'?curHash:'mapa';curHash=h;location.hash=h;return}
   if(a==='leaveapp'){document.querySelector('.modal')?.remove();history.back();setTimeout(()=>{if(location.hash==='#salir')toast('Ya puedes cerrar esta pestaña.')},400);return}
+  if(a==='tourhelp'){if(curHash==='reto'&&G&&!G.over){playTour(true)}else{if(curHash!=='mapa'){G=null;mapView();scrollTo(0,0)}setTimeout(()=>mapTour(true),350)}return}
+  if(a==='testvoice'){if(!speak(`¡Hola${S.name?', '+S.name:''}! Soy Numi. ¿Jugamos con los números?`))toast('Este celular no tiene voces en español.');return}
   if(a==='lpic'){if(LG.pics.length<3){LG.pics.push(b.dataset.k);const nm=$('#lu');if(nm)LG.user=nm.value;LG.err='';loginView()}return}
   if(a==='lclear'){LG.pics=[];const nm=$('#lu');if(nm)LG.user=nm.value;loginView();return}
   if(a==='login'){doLogin();return}
@@ -1069,6 +1097,8 @@ document.addEventListener('click',e=>{
   else if(a==='step'){G.step++;persist();renderHelp();const li=document.querySelectorAll('.steps li');li[li.length-1]?.scrollIntoView({behavior:'smooth',block:'nearest'})}
   else if(a==='next'){G.i++;nextQ();scrollTo(0,0)}
 });
+document.addEventListener('change',e=>{if(e.target.id==='vz'){S.voice=e.target.value;save();if(S.voice!=='off')speak('¡Hola! Así sonará mi voz.')}});
+try{speechSynthesis.addEventListener('voiceschanged',()=>{if($('#vz')&&curHash==='inicio')home()})}catch(e){}
 document.addEventListener('keydown',e=>{
   if(e.target.id==='lu'){if(e.key==='Enter')doLogin();return}
   if(e.target.id==='nm'){if(e.key==='Enter'){S.name=e.target.value.trim();S.started=true;save();mapView()}return}
