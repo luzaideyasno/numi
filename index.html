@@ -658,7 +658,7 @@ const PIC=k=>`<svg viewBox="0 0 32 32"><use href="#i-${k}"/></svg>`;
 function waitDB(ms){return new Promise(r=>{if(window.NumiDB)return r(window.NumiDB);if(window.NUMIDB_FAIL)return r(null);const t=setTimeout(()=>r(null),ms);addEventListener('numidb',()=>{clearTimeout(t);r(window.NumiDB)},{once:true});addEventListener('numidbfail',()=>{clearTimeout(t);r(null)},{once:true})})}
 function loadingView(t){topEl.innerHTML='';app.innerHTML=`<div class="loading"><div><div class="numi-big" style="max-width:150px;margin:0 auto">${numi(S.eq,'happy')}</div><p style="font-weight:600;font-size:20px">${t||'Cargando…'}</p></div></div>`}
 function loginView(){
-  G=null;topEl.innerHTML='';
+  G=null;topEl.innerHTML='';curHash='entrar';if(location.hash!=='#entrar')location.replace('#entrar');
   app.innerHTML=`<section class="hero"><div class="wrap"><div class="numi-big">${numi(S.eq,'happy')}</div>
   <div><h1>¡Hola! ¿Quién eres?</h1><p class="lead">Escribe tu usuario y toca tus 3 dibujitos en orden. Están en la tarjeta que te dio tu profe.</p></div></div></section>
   <div class="wrap"><section class="panel">
@@ -707,10 +707,10 @@ async function enterAccount(st){
 function saveWardrobe(){if(ACCT&&DB)DB.saveWardrobe({owned:S.owned,eq:S.eq,spent:S.spent||0}).catch(()=>{})}
 async function logoutAcc(){try{await DB.logout()}catch(e){}ACCT=null;TASKS=[];STORE='numi-v3';S={...S,name:'',saved:null};loginView()}
 /* ---------- historial: el botón atrás navega dentro de Numi ---------- */
-let skipHash=null,curHash='',routing=false,pendingBack=null,retoPushed=false;
+let curHash='',routing=false,pendingBack=null,retoPushed=false,GUARD=false,guardIgnore=[];
 function setHash(h){
   if(h==='reto'&&curHash!=='reto')retoPushed=!routing;
-  curHash=h;if(location.hash.slice(1)===h)return;skipHash=h;
+  curHash=h;if(location.hash.slice(1)===h)return;
   if(routing)location.replace('#'+h);else location.hash=h;
 }
 function route(h,fromLoad){routing=true;try{routeIn(h,fromLoad)}finally{routing=false}}
@@ -727,14 +727,31 @@ function routeIn(h,fromLoad){
   else mapView();
   scrollTo(0,0);
 }
-addEventListener('hashchange',()=>{
-  const h=location.hash.slice(1);
-  if(h===skipHash){skipHash=null;return}
+addEventListener('hashchange',e=>{
+  const h=(e.newURL.split('#')[1]||'');
+  if(guardIgnore.length&&h===guardIgnore[0]){guardIgnore.shift();return}
+  if(h===curHash)return;
   if(curHash==='reto'&&G&&!G.over&&h!=='reto'){
     if(document.querySelector('.modal')){pendingBack=null;route(h);return}
     pendingBack=h;askExit();return}
+  if(h==='salir'){askLeave();return}
+  if(h==='entrar'){if(DB&&!ACCT){loginView();return}}
   route(h);
 });
+/* Guardia del botón atrás: con el primer toque se agrega una entrada "salir" debajo de la pantalla actual,
+   así "atrás" desde la pantalla principal pregunta antes de cerrar Numi. */
+addEventListener('pointerdown',()=>{
+  if(GUARD)return;const h=location.hash.slice(1);if(!h||h==='salir')return;GUARD=true;
+  guardIgnore=['salir',h];curHash=h;location.replace('#salir');location.hash=h;
+},{capture:true});
+function askLeave(){
+  if(G&&!G.over)persist();
+  document.querySelector('.modal')?.remove();
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="sheet" role="dialog" aria-label="Salir de Numi">${NM('think')}<h3>¿Quieres salir de Numi?</h3><p>Tu progreso queda guardado.</p>
+  <button class="big-btn alt" data-act="stayapp">Seguir jugando</button><button class="big-btn" data-act="leaveapp">Sí, salir</button></div>`;
+  document.body.appendChild(m);
+}
 function persist(){if(G){S.saved=JSON.parse(JSON.stringify(G));save()}}
 const savedFor=(w,l)=>S.saved&&S.saved.g==S.grade&&(w==null||(S.saved.w==w&&S.saved.l==l));
 function resume(){
@@ -1007,6 +1024,8 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(!['ans','key','del','check','item'].includes(a))sound('tap');
   const nm=$('#nm');if(nm){S.name=nm.value.trim()}
+  if(a==='stayapp'){document.querySelector('.modal')?.remove();const h=curHash&&curHash!=='salir'?curHash:'mapa';curHash=h;location.hash=h;return}
+  if(a==='leaveapp'){document.querySelector('.modal')?.remove();history.back();setTimeout(()=>{if(location.hash==='#salir')toast('Ya puedes cerrar esta pestaña.')},400);return}
   if(a==='lpic'){if(LG.pics.length<3){LG.pics.push(b.dataset.k);const nm=$('#lu');if(nm)LG.user=nm.value;LG.err='';loginView()}return}
   if(a==='lclear'){LG.pics=[];const nm=$('#lu');if(nm)LG.user=nm.value;loginView();return}
   if(a==='login'){doLogin();return}
@@ -1033,7 +1052,7 @@ document.addEventListener('click',e=>{
   else if(a==='level'){savedFor(b.dataset.w,+b.dataset.l)?resume():start(b.dataset.w,b.dataset.l);scrollTo(0,0)}
   else if(a==='resume'){resume();scrollTo(0,0)}
   else if(a==='askexit')askExit();
-  else if(a==='stay'){document.querySelector('.modal')?.remove();if(pendingBack){pendingBack=null;skipHash='reto';location.hash='reto'}}
+  else if(a==='stay'){document.querySelector('.modal')?.remove();if(pendingBack){pendingBack=null;curHash='reto';location.hash='reto'}}
   else if(a==='exit'){document.querySelector('.modal')?.remove();persist();
     if(pendingBack){const h=pendingBack;pendingBack=null;route(h)}
     else if(retoPushed){G=null;history.back()}
@@ -1060,7 +1079,7 @@ document.addEventListener('keydown',e=>{
 });
 
 function boot(){const h=location.hash.slice(1);
- if(!h||h==='base'||h==='fin'||h==='inicio'&&ACCT){routing=true;S.started?mapView():home();routing=false}
+ if(!h||h==='base'||h==='fin'||h==='salir'||h==='entrar'||h==='inicio'&&ACCT){routing=true;S.started?mapView():home();routing=false}
  else route(h,true);}
 (async()=>{
   loadingView();

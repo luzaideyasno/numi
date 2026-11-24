@@ -154,6 +154,8 @@ details summary{cursor:pointer;font-weight:700;color:var(--coral);min-height:32p
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 12px;padding-inline-start:9.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:9em;margin-inline-start:-9em;white-space:normal;color:var(--muted);font-size:13px;font-weight:700}.stack td:empty{display:none}.stack td.n{text-align:start}.card{padding:var(--s3)}.hrow{grid-template-columns:112px minmax(0,1fr) 34px;font-size:14px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 #print{display:none}
+.modal{position:fixed;inset:0;background:rgb(23 19 42/.55);display:grid;place-items:center;padding:20px;z-index:40}
+.sheet{max-width:420px;width:100%}
 @media print{body>*:not(#print){display:none!important}#print{display:block}#print .cards{grid-template-columns:repeat(3,1fr);gap:10px}#print .ucard{break-inside:avoid;border:2px dashed #888;color:#2b1d3a;background:#fff}}
 </style>
 <script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
@@ -244,7 +246,41 @@ function render(){
   else if(V.screen=='student')body=student();
   else body=salon();
   root.innerHTML=topbar()+`<main class="wrap">${body}</main>`;
+  syncHash();
 }
+/* ---------- historial: el botón atrás navega dentro del panel ---------- */
+let curH='',routingH=true,GUARD=false,guardIgnore=[];
+function navHash(){
+  if(V.screen=='student'&&C())return `estudiante-${C().id}-${V.student}`;
+  if(V.screen=='salon'&&C())return `curso-${C().id}-${V.tab}`;
+  return V.role=='admin'?V.atab:'inicio';
+}
+function syncHash(){const h=navHash();if(location.hash.slice(1)===h){curH=h;return}curH=h;if(routingH)location.replace('#'+h);else location.hash=h}
+function applyHash(h){
+  const m=h.match(/^(curso|estudiante)-([A-Za-z0-9]+)-(.+)$/);
+  if(m){const i=D.classes.findIndex(c=>c.id==m[2]);if(i>=0){V.cls=i;
+    if(m[1]=='curso'&&TABS.some(t=>t[0]==m[3])){V.screen='salon';V.tab=m[3];return true}
+    if(m[1]=='estudiante'&&D.classes[i].students.some(x=>x.id==m[3])){V.screen='student';V.student=m[3];V.tab='estudiantes';return true}}}
+  V.screen='home';if(V.role=='admin'&&['colegio','profesores','cursos'].includes(h))V.atab=h;
+  return h=='inicio'||['colegio','profesores','cursos'].includes(h);
+}
+function askLeave(){
+  document.querySelector('.modal')?.remove();const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="card sheet"><h3>¿Quieres salir del panel?</h3><p class="muted" style="margin:6px 0 16px">Todo lo que hiciste queda guardado.</p><div class="tools" style="margin:0"><button class="btn alt" data-a="stayapp">Seguir en el panel</button><button class="btn ghost" data-a="leaveapp">Salir</button></div></div>`;
+  document.body.appendChild(m);
+}
+addEventListener('hashchange',e=>{
+  const h=e.newURL.split('#')[1]||'';
+  if(guardIgnore.length&&h===guardIgnore[0]){guardIgnore.shift();return}
+  if(h===curH||!ME_P||['login','setup','boot','loading','noaccess','nodb'].includes(V.screen))return;
+  document.querySelector('.modal')?.remove();
+  if(h==='salir'){askLeave();return}
+  routingH=true;applyHash(h);render();routingH=false;scrollTo(0,0);
+});
+addEventListener('pointerdown',()=>{
+  if(GUARD||!ME_P)return;const h=location.hash.slice(1);if(!h||h==='salir')return;GUARD=true;
+  guardIgnore=['salir',h];curH=h;location.replace('#salir');location.hash=h;
+},{capture:true});
 function login(){
   root.innerHTML=`<div class="login"><div class="art">${NUMI}</div><form id="lf">
   <h1>Hola, profe</h1><p class="muted">Entra para ver cómo van tus estudiantes en Numi.</p>
@@ -273,7 +309,7 @@ async function afterAuth(){
     ME_P=await DB.me();
     if(!ME_P){const uid=DB.user()?.uid||'';await DB.logout();V.err=`Esa cuenta no tiene acceso al panel. Pide a la coordinación que te cree como profesor. (UID: ${uid})`;V.screen='login';return render()}
     V.role=ME_P.role=='admin'?'admin':'teacher';
-    await loadAll();V.screen='home';render();scrollTo(0,0);
+    await loadAll();V.screen='home';routingH=true;applyHash(location.hash.slice(1));render();routingH=false;scrollTo(0,0);
   }catch(e){fail(e);V.screen='noaccess';render()}
 }
 function salonCard(c){const i=D.classes.indexOf(c),st=c.students,act=st.filter(s=>last(s)&&NOW-last(s)<7*DAY).length,prom=clsAvg(c),need=st.filter(s=>{const n=finalNota(s);return n==null||n<c.scale.alert}).length;
@@ -534,6 +570,8 @@ document.addEventListener('click',async e=>{
   else if(a=='logout'){await DB.logout();ME_P=null;D.classes=[];V.screen='login';V.err='';render()}
   else if(a=='setup'){V.screen='setup';V.err='';render()}
   else if(a=='tologin'){V.screen='login';V.err='';render()}
+  else if(a=='stayapp'){document.querySelector('.modal')?.remove();curH=navHash();location.hash=curH}
+  else if(a=='leaveapp'){document.querySelector('.modal')?.remove();history.back()}
   else if(a=='forgot'){const em=$('#em').value.trim();if(!em){V.err='Escribe tu correo y vuelve a tocar "Olvidé mi contraseña".';return login()}await DB.resetPassword(em);V.err='';login();toast('Te enviamos un correo para crear una contraseña nueva.')}
   else if(a=='refresh'){V.screen='loading';render();await loadAll();V.screen=V.screen=='loading'?'home':V.screen;V.screen='home';render();toast('Datos actualizados.')}
   else if(a=='cls'){V.cls=+b.dataset.i;V.screen='salon';V.tab='resumen';V.ocr=null;render();scrollTo(0,0)}
