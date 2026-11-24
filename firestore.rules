@@ -19,7 +19,10 @@ service cloud.firestore {
       // La primera cuenta de coordinación se crea sola desde el panel, una única vez
       allow create: if isAdmin() || (signedIn() && request.auth.uid == uid && request.resource.data.role == 'admin'
         && !exists(/databases/$(db)/documents/config/setup) && existsAfter(/databases/$(db)/documents/config/setup));
-      allow update, delete: if isAdmin();
+      // El profesor solo puede marcar que ya cambió su clave temporal
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChange']) && request.resource.data.mustChange == false);
+      allow delete: if isAdmin();
     }
 
     // Marca de que la configuración inicial ya se hizo

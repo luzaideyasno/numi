@@ -210,6 +210,7 @@ async function loadAll(){
   if(ME_P.role=='admin')D.teachers=(await DB.staff()).filter(u=>u.role=='teacher').map(u=>({...u,access:u.access||[]})).sort(byName);
   await Promise.all(D.classes.map(loadCourse));
 }
+const first=n=>String(n||'').split(' ')[0];
 const fail=e=>{console.error(e);toast(DB?DB.message(e):String(e))};
 
 /* ---------- notas ---------- */
@@ -238,6 +239,12 @@ function topbar(){const nm=ME_P?ME_P.name:'';return `<header class="bar"><div cl
 function render(){
   if(V.screen=='login')return login();
   if(V.screen=='setup')return setupView();
+  if(V.screen=='newpw'){root.innerHTML=`<div class="login"><div class="art">${NUMI}</div><form id="npf">
+  <h1>¡Hola, ${esc(first(ME_P.name))}! Te damos la bienvenida a Numi</h1><p class="muted">Entraste con una clave temporal. Crea ahora tu propia contraseña para el panel.</p>
+  <div><label for="np1">Contraseña nueva (mínimo 6 caracteres)</label><input id="np1" type="password" autocomplete="new-password" required></div>
+  <div><label for="np2">Repite la contraseña</label><input id="np2" type="password" autocomplete="new-password" required></div>
+  <button class="btn" type="submit" ${V.busy?'disabled':''}>${V.busy?'Guardando…':'Guardar y entrar'}</button>
+  <p style="color:var(--coral);font-weight:700;min-height:1.5em" aria-live="polite">${esc(V.err||'')}</p></form></div>`;return}
   if(V.screen=='boot'||V.screen=='loading'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div style="display:grid;place-items:center;gap:12px;text-align:center"><svg viewBox="0 0 120 120" style="width:120px"><use href="#numi"/></svg><div class="spin"></div><p class="muted">${V.screen=='boot'?'Conectando…':'Cargando cursos y notas…'}</p></div></div>`;return}
   if(V.screen=='noaccess'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>Tu cuenta no tiene acceso al panel</h2><p class="muted" style="margin:8px 0 16px">Pide a la coordinación que te cree como profesor en Numi. Si eres la coordinación, revisa que exista el documento <b>users/${esc(DB.user()?.uid||'')}</b> con role "admin" en Firestore.</p><button class="btn" data-a="logout">Salir</button></div></div>`;return}
   if(V.screen=='nodb'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>No se pudo conectar con Firebase</h2><p class="muted" style="margin-top:8px">Abre el panel desde su dirección publicada (GitHub Pages) y revisa la conexión a internet.</p></div></div>`;return}
@@ -264,6 +271,16 @@ function applyHash(h){
   V.screen='home';if(V.role=='admin'&&['colegio','profesores','cursos'].includes(h))V.atab=h;
   return h=='inicio'||['colegio','profesores','cursos'].includes(h);
 }
+let CREDMSG='';
+function showCreds(t,pw){
+  const url=location.origin+location.pathname;
+  CREDMSG=`Hola ${first(t.name)}, te creamos tu cuenta en Numi, el juego de matemáticas del colegio.\n\nEntra aquí: ${url}\nCorreo: ${t.email}\nClave temporal: ${pw}\n\nAl entrar, Numi te pedirá crear tu propia contraseña.`;
+  document.querySelector('.modal')?.remove();const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="card sheet"><h3>Profesor creado</h3><p class="muted" style="margin:6px 0 12px">Envíale este mensaje a ${esc(t.name)}. La clave temporal solo se muestra ahora.</p>
+  <pre style="white-space:pre-wrap;background:var(--bg);border-radius:12px;padding:12px;font:15px/1.45 Nunito,sans-serif;margin:0 0 14px">${esc(CREDMSG)}</pre>
+  <div class="tools" style="margin:0"><a class="btn alt" href="https://wa.me/?text=${encodeURIComponent(CREDMSG)}" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn ghost" data-a="credcopy">Copiar mensaje</button><button class="btn ghost" data-a="credclose">Listo</button></div></div>`;
+  document.body.appendChild(m);
+}
 function askLeave(){
   document.querySelector('.modal')?.remove();const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="card sheet"><h3>¿Quieres salir del panel?</h3><p class="muted" style="margin:6px 0 16px">Todo lo que hiciste queda guardado.</p><div class="tools" style="margin:0"><button class="btn alt" data-a="stayapp">Seguir en el panel</button><button class="btn ghost" data-a="leaveapp">Salir</button></div></div>`;
@@ -289,7 +306,7 @@ function login(){
   <button class="btn" type="submit" ${V.busy?'disabled':''}>${V.busy?'Entrando…':'Entrar'}</button>
   <p style="color:var(--coral);font-weight:700;min-height:1.5em" aria-live="polite">${esc(V.err||'')}</p>
   <button class="link" type="button" data-a="forgot" style="justify-self:start">Olvidé mi contraseña</button>
-  <p class="muted" style="font-size:14px">Las cuentas de profesores las crea la coordinación desde este panel. Te llega un correo para crear tu contraseña.</p>
+  <p class="muted" style="font-size:14px">Las cuentas de profesores las crea la coordinación desde este panel y te comparte una clave temporal.</p>
   ${V.setupDone===false?`<div class="card" style="background:var(--warn);border:0"><b>¿Es la primera vez que se usa Numi en el colegio?</b><p class="muted" style="font-size:14px;margin:4px 0 10px">Crea aquí la cuenta del coordinador (súper usuario). Esta opción desaparece cuando ya existe.</p><button class="btn sm" type="button" data-a="setup">Crear cuenta del coordinador</button></div>`:''}</form></div>`;
 }
 function setupView(){
@@ -309,6 +326,7 @@ async function afterAuth(){
     ME_P=await DB.me();
     if(!ME_P){const uid=DB.user()?.uid||'';await DB.logout();V.err=`Esa cuenta no tiene acceso al panel. Pide a la coordinación que te cree como profesor. (UID: ${uid})`;V.screen='login';return render()}
     V.role=ME_P.role=='admin'?'admin':'teacher';
+    if(ME_P.mustChange){V.screen='newpw';V.err='';return render()}
     await loadAll();V.screen='home';routingH=true;applyHash(location.hash.slice(1));render();routingH=false;scrollTo(0,0);
   }catch(e){fail(e);V.screen='noaccess';render()}
 }
@@ -381,7 +399,7 @@ function aCursos(){
     <span class="tools" style="margin:0;flex-wrap:nowrap"><button class="btn ghost sm" data-a="cls" data-i="${i}">Ver</button>${c.closed?'':`<button class="btn ghost sm" data-a="ecedit" data-c="${c.id}">Editar</button>`}</span></div>`}).join(''):''}).join(''):`<p class="muted">No hay cursos en ${VY}.</p>`}</section></div>`;
 }
 function aProfes(){
-  return `<div class="grid g2"><section class="card" style="align-self:start"><h3>Crear profesor</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Le llega un correo para crear su contraseña. Solo verá los cursos que le asignes.</p>
+  return `<div class="grid g2"><section class="card" style="align-self:start"><h3>Crear profesor</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Numi genera una clave temporal y un mensaje para enviárselo por WhatsApp. Solo verá los cursos que le asignes.</p>
   <div class="grid" style="gap:var(--s2)"><div><label for="ntn">Nombre</label><input id="ntn" value="${esc(NT.name)}" placeholder="Ej.: Ana María Gómez"></div>
   <div><label for="nte">Correo del colegio</label><input id="nte" type="email" value="${esc(NT.email)}" placeholder="nombre@colegio.edu.co"></div>
   <div><label>Acceso a grados y cursos</label>${accessPicker(NT.access,'nt')}</div>
@@ -552,6 +570,13 @@ async function saveStudents(){
   c.students.push(...made);c.students.sort(byName);V.ocr=null;render();
   toast(errors?`Se crearon ${made.length} usuarios. ${errors} no se pudieron crear.`:`¡Listo! Se crearon ${made.length} usuarios. Ya puedes imprimir las tarjetas.`);
 }
+document.addEventListener('submit',async e=>{if(e.target.id!='npf')return;e.preventDefault();
+  const p1=$('#np1').value,p2=$('#np2').value;
+  if(p1.length<6){V.err='La contraseña debe tener al menos 6 caracteres.';return render()}
+  if(p1!==p2){V.err='Las contraseñas no coinciden.';return render()}
+  V.busy=true;V.err='';render();
+  try{await DB.changeMyPassword(p1);ME_P.mustChange=false;V.busy=false;V.screen='loading';render();await loadAll();V.screen='home';render();toast('¡Contraseña guardada! Ya estás en tu panel.')}
+  catch(err){V.busy=false;V.err=err.code=='auth/requires-recent-login'?'Por seguridad, sal y vuelve a entrar con la clave temporal.':DB.message(err);render()}});
 document.addEventListener('submit',async e=>{if(e.target.id!='sf')return;e.preventDefault();
   V.sn=$('#sn').value.trim();V.se=$('#se').value.trim();const p1=$('#sp').value,p2=$('#sp2').value;
   if(p1.length<6){V.err='La contraseña debe tener al menos 6 caracteres.';return setupView()}
@@ -607,8 +632,10 @@ document.addEventListener('click',async e=>{
   else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();
     if(!NT.name||!/^\S+@\S+\.\S+$/.test(NT.email)){toast('Escribe el nombre y un correo válido.');return}
     if(!NT.access.length){toast('Elige al menos un grado o curso.');return}
-    b.disabled=true;const uid=await DB.createTeacher(NT);D.teachers.push({id:uid,role:'teacher',...NT,access:[...NT.access]});D.teachers.sort(byName);
-    toast(`Profesor creado. Le llegó un correo a ${NT.email} para crear su contraseña.`);NT={name:'',email:'',access:[]};render()}
+    b.disabled=true;const {uid,pw}=await DB.createTeacher(NT);D.teachers.push({id:uid,role:'teacher',...NT,access:[...NT.access]});D.teachers.sort(byName);
+    const t={...NT};NT={name:'',email:'',access:[]};render();showCreds(t,pw)}
+  else if(a=='credcopy'){navigator.clipboard.writeText(CREDMSG).then(()=>toast('Mensaje copiado. Pégalo en WhatsApp o en un correo.'),()=>toast('No se pudo copiar.'))}
+  else if(a=='credclose'){document.querySelector('.modal')?.remove()}
   /* súper usuario: cursos */
   else if(a=='vy'){VY=+b.dataset.y;EC=null;render()}
   else if(a=='nct'){NC.name=$('#ncn').value;const k=NC.teachers.indexOf(b.dataset.id);k>=0?NC.teachers.splice(k,1):NC.teachers.push(b.dataset.id);render()}

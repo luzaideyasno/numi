@@ -22,7 +22,7 @@ Juego de matemáticas para niñas de 3.° a 5.° con retos, ayuda paso a paso y 
 
 ## Primer uso
 1. En `docente.html`, tocar **"Crear cuenta del coordinador"** (solo aparece la primera vez) y llenar nombre, correo y contraseña.
-2. El coordinador entra a `docente.html`, crea los cursos del año y los profesores (les llega un correo para crear su contraseña).
+2. El coordinador entra a `docente.html`, crea los cursos del año y los profesores. El panel genera una clave temporal y un mensaje para enviarles por WhatsApp; al entrar, cada profesor crea su propia contraseña.
 3. Cada profesor crea sus estudiantes desde la foto de la lista (o escribiéndola) e imprime las tarjetas de ingreso.
 
 ## Decisiones

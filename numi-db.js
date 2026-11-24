@@ -78,15 +78,22 @@ export const NumiDB = {
   setAccess: (uid, access) => updateDoc(doc(db, 'users', uid), { access }),
   // Quita el acceso del profesor al panel (su cuenta de acceso queda en Authentication sin permisos)
   deleteStaff: uid => deleteDoc(doc(db, 'users', uid)),
+  // Crea al profesor con una clave temporal (se la comparte la coordinación); al entrar, el panel le pide cambiarla
   async createTeacher({ name, email, access }) {
     const sec = secondary();
     try {
-      const tmp = 'Numi-' + Array.from(crypto.getRandomValues(new Uint32Array(3))).join('') + '!';
-      const c = await createUserWithEmailAndPassword(getAuth(sec), email.trim(), tmp);
-      await setDoc(doc(db, 'users', c.user.uid), { role: 'teacher', name, email: email.trim(), access, created: Date.now() });
-      await sendPasswordResetEmail(auth, email.trim());
-      return c.user.uid;
+      const words = ['sol', 'luna', 'flor', 'nube', 'mar', 'rio', 'arcoiris', 'estrella'];
+      const n = crypto.getRandomValues(new Uint32Array(2));
+      const pw = `Numi-${1000 + (n[0] % 9000)}-${words[n[1] % words.length]}`;
+      const c = await createUserWithEmailAndPassword(getAuth(sec), email.trim(), pw);
+      await setDoc(doc(db, 'users', c.user.uid), { role: 'teacher', name, email: email.trim(), access, mustChange: true, created: Date.now() });
+      return { uid: c.user.uid, pw };
     } finally { await deleteApp(sec); }
+  },
+  async changeMyPassword(pw) {
+    const u = auth.currentUser;
+    await updatePassword(u, pw);
+    await updateDoc(doc(db, 'users', u.uid), { mustChange: false });
   },
 
   students: courseId => byCourse('students', courseId),
