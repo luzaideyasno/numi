@@ -213,6 +213,9 @@ async function loadAll(){
   await Promise.all(D.classes.map(loadCourse));
 }
 const first=n=>String(n||'').split(' ')[0];
+// Celular colombiano: 3001234567 -> 573001234567; si ya trae indicativo, se deja
+const waNum=p=>{let d=String(p||'').replace(/\D/g,'');if(d.length==10&&d[0]=='3')d='57'+d;return d.length>=11?d:''};
+const fmtPhone=p=>{const d=String(p||'').replace(/\D/g,'');return d.length==10?`${d.slice(0,3)} ${d.slice(3,6)} ${d.slice(6)}`:p};
 const fail=e=>{console.error(e);toast(DB?DB.message(e):String(e))};
 
 /* ---------- notas ---------- */
@@ -280,7 +283,7 @@ function showCreds(t,pw){
   document.querySelector('.modal')?.remove();const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="card sheet"><h3>Profesor creado</h3><p class="muted" style="margin:6px 0 12px">Envíale este mensaje a ${esc(t.name)}. La clave temporal solo se muestra ahora.</p>
   <pre style="white-space:pre-wrap;background:var(--bg);border-radius:12px;padding:12px;font:15px/1.45 Nunito,sans-serif;margin:0 0 14px">${esc(CREDMSG)}</pre>
-  <div class="tools" style="margin:0"><a class="btn alt" href="https://wa.me/?text=${encodeURIComponent(CREDMSG)}" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn ghost" data-a="credcopy">Copiar mensaje</button><button class="btn ghost" data-a="credclose">Listo</button></div></div>`;
+  <div class="tools" style="margin:0"><a class="btn alt" href="https://wa.me/${waNum(t.phone)}?text=${encodeURIComponent(CREDMSG)}" target="_blank" rel="noopener">${waNum(t.phone)?'Enviar por WhatsApp a '+esc(fmtPhone(t.phone)):'Enviar por WhatsApp'}</a><button class="btn ghost" data-a="credcopy">Copiar mensaje</button><button class="btn ghost" data-a="credclose">Listo</button></div></div>`;
   document.body.appendChild(m);
 }
 function askLeave(){
@@ -378,7 +381,7 @@ function accessPicker(sel,prefix){
   return GR.map(g=>{const cs=sortedCls().filter(c=>c.grade==g),allOn=cs.every(c=>sel.includes(c.id));
     return `<div class="acc"><button type="button" class="chipb ${allOn?'on':''}" data-a="${prefix}g" data-g="${g}">Todo ${g}.°</button>${cs.map(c=>`<button type="button" class="chipb ${sel.includes(c.id)?'on':''}" data-a="${prefix}c" data-c="${c.id}">${c.name}</button>`).join('')}</div>`}).join('');
 }
-let NT={name:'',email:'',access:[]},NC={grade:3,name:'',year:new Date().getFullYear(),teachers:[]},VY=new Date().getFullYear(),EC=null,ECT=[];
+let NT={name:'',email:'',phone:'',access:[]},NC={grade:3,name:'',year:new Date().getFullYear(),teachers:[]},VY=new Date().getFullYear(),EC=null,ECT=[];
 const nextName=(g,y)=>{const used=D.classes.filter(c=>c.year==y&&c.grade==g).map(c=>c.name);for(const L of 'ABCDEFGH'){const n=`${g}.°${L}`;if(!used.includes(n))return n}return g+'.°'};
 function aCursos(){
   const years=[...new Set(D.classes.map(c=>c.year).concat(D.year))].sort(),cls=sortedCls(VY),next=D.year+1,hasNext=D.classes.some(c=>c.year==next);
@@ -404,13 +407,14 @@ function aProfes(){
   return `<div class="grid g2"><section class="card" style="align-self:start"><h3>Crear profesor</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Numi genera una clave temporal y un mensaje para enviárselo por WhatsApp. Solo verá los cursos que le asignes.</p>
   <div class="grid" style="gap:var(--s2)"><div><label for="ntn">Nombre</label><input id="ntn" value="${esc(NT.name)}" placeholder="Ej.: Ana María Gómez"></div>
   <div><label for="nte">Correo del colegio</label><input id="nte" type="email" value="${esc(NT.email)}" placeholder="nombre@colegio.edu.co"></div>
+  <div><label for="ntp">Celular (WhatsApp)</label><input id="ntp" type="tel" inputmode="tel" value="${esc(NT.phone||'')}" placeholder="300 123 4567"></div>
   <div><label>Acceso a grados y cursos</label>${accessPicker(NT.access,'nt')}</div>
   <button class="btn" data-a="ntsave">Crear profesor</button></div></section>
   <section class="card"><h3>Profesores (${D.teachers.length})</h3>${D.teachers.map(t=>{const cs=sortedCls().filter(c=>t.access.includes(c.id)),n=cs.reduce((a,c)=>a+c.students.length,0),pr=avg(cs.flatMap(c=>c.students).map(finalNota).filter(x=>x!=null));
-    return `<div class="trow2"><i class="av">${ini(t.name)}</i><div><b>${esc(t.name)}</b><small>${esc(t.email)}</small>
+    return `<div class="trow2"><i class="av">${ini(t.name)}</i><div><b>${esc(t.name)}</b><small>${esc(t.email)}${t.phone?` · <a href="https://wa.me/${waNum(t.phone)}" target="_blank" rel="noopener" style="color:var(--teal);font-weight:700">WhatsApp ${esc(fmtPhone(t.phone))}</a>`:''}</small>
     <div class="qs" style="margin-top:6px">${cs.length?cs.map(c=>`<button class="q q-s" data-a="cls" data-i="${D.classes.indexOf(c)}">${c.name}</button>`).join(''):'<span class="pill p-bad">Sin acceso</span>'}</div>
     <small style="margin-top:4px">${n} estudiantes · promedio ${f1(pr)}</small>
-    ${V.editT==t.id?`<div style="margin-top:var(--s2)">${accessPicker(t.access,'et')}<div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm alt" data-a="etdone">Listo</button><button class="btn sm ghost" style="color:var(--coral)" data-a="etdel" data-id="${t.id}">Eliminar profesor</button></div></div>`:''}</div>
+    ${V.editT==t.id?`<div style="margin-top:var(--s2)"><label for="etp" style="margin-top:4px">Celular (WhatsApp)</label><input id="etp" type="tel" inputmode="tel" value="${esc(t.phone||'')}" placeholder="300 123 4567" style="margin-bottom:10px">${accessPicker(t.access,'et')}<div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm alt" data-a="etdone">Listo</button><button class="btn sm ghost" style="color:var(--coral)" data-a="etdel" data-id="${t.id}">Eliminar profesor</button></div></div>`:''}</div>
     ${V.editT==t.id?'':`<button class="btn ghost sm" data-a="etedit" data-id="${t.id}">Editar acceso</button>`}</div>`}).join('')}</section></div>`;
 }
 function toggleAccess(list,a,b){
@@ -646,18 +650,19 @@ document.addEventListener('click',async e=>{
   else if(a=='delst'){const s=C().students.find(x=>x.id==b.dataset.id);if(!confirm(`¿Quitar a ${s.name} del curso? Sus resultados quedan guardados.`))return;await DB.deleteStudent(s.id);C().students=C().students.filter(x=>x.id!=s.id);render();toast('Estudiante quitada.')}
   else if(a=='screset'){C().scale={...DEF_SCALE};render();await DB.setScale(C().id,C().scale);toast('Escala restablecida.')}
   /* súper usuario: profesores */
-  else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;toggleAccess(NT.access,a,b);render()}
-  else if(a=='etg'||a=='etc'){toggleAccess(D.teachers.find(t=>t.id==V.editT).access,a,b);render()}
+  else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;NT.phone=$('#ntp').value;toggleAccess(NT.access,a,b);render()}
+  else if(a=='etg'||a=='etc'){const ph=$('#etp')?.value;toggleAccess(D.teachers.find(t=>t.id==V.editT).access,a,b);render();if(ph!=null&&$('#etp'))$('#etp').value=ph}
   else if(a=='etedit'){V.editT=b.dataset.id;render()}
   else if(a=='etdel'){const t=D.teachers.find(x=>x.id==b.dataset.id);if(!confirm(`¿Eliminar a ${t.name} (${t.email})? Ya no podrá entrar al panel. Las notas de sus cursos no se borran.`))return;
     await DB.deleteStaff(t.id);D.teachers=D.teachers.filter(x=>x.id!=t.id);V.editT=null;render();toast(`${t.name} fue eliminado. Ya puedes crearlo de nuevo con el correo correcto.`)}
-  else if(a=='etdone'){const t=D.teachers.find(x=>x.id==V.editT);await DB.setAccess(t.id,t.access);V.editT=null;render();toast('Acceso actualizado.')}
-  else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();
+  else if(a=='etdone'){const t=D.teachers.find(x=>x.id==V.editT),ph=($('#etp')?.value||'').trim();if(ph&&!waNum(ph)){toast('Revisa el celular: debe tener 10 números.');return}await DB.setAccess(t.id,t.access);if(ph!==(t.phone||'')){await DB.updateStaff(t.id,{phone:ph});t.phone=ph}V.editT=null;render();toast('Acceso actualizado.')}
+  else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();NT.phone=$('#ntp').value.trim();
+    if(NT.phone&&!waNum(NT.phone)){toast('Revisa el celular: debe tener 10 números, por ejemplo 300 123 4567.');return}
     if(!NT.name||!/^\S+@\S+\.\S+$/.test(NT.email)){toast('Escribe el nombre y un correo válido.');return}
     if(!NT.access.length){toast('Elige al menos un grado o curso.');return}
     b.disabled=true;let made;try{made=await DB.createTeacher(NT)}catch(err){b.disabled=false;if(err.code=='auth/email-already-in-use'){toast('Ese correo ya existe en Firebase (por ejemplo, un profesor eliminado). Bórralo en Firebase → Authentication → Usuarios y vuelve a crearlo.');return}throw err}
     const {uid,pw}=made;D.teachers.push({id:uid,role:'teacher',...NT,access:[...NT.access]});D.teachers.sort(byName);
-    const t={...NT};NT={name:'',email:'',access:[]};render();showCreds(t,pw)}
+    const t={...NT};NT={name:'',email:'',phone:'',access:[]};render();showCreds(t,pw)}
   else if(a=='credcopy'){navigator.clipboard.writeText(CREDMSG).then(()=>toast('Mensaje copiado. Pégalo en WhatsApp o en un correo.'),()=>toast('No se pudo copiar.'))}
   else if(a=='credclose'){document.querySelector('.modal')?.remove()}
   /* súper usuario: cursos */
