@@ -1,10 +1,10 @@
 // Numi — capa de datos con Firebase (Authentication + Firestore).
 // La usan el juego (index.html) y el panel docente (docente.html).
-import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
-  sendPasswordResetEmail, updatePassword } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  sendPasswordResetEmail, updatePassword } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc,
-  updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 import { firebaseConfig, STUDENT_DOMAIN } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
@@ -123,6 +123,27 @@ export const NumiDB = {
     } finally { await deleteApp(sec); }
   },
   updateStudent: (id, d) => updateDoc(doc(db, 'students', id), d),
+  // Lee los nombres de una foto de la lista con Gemini (Firebase AI Logic). Devuelve ["Nombres Apellidos", ...]
+  async readNameList(blob) {
+    const { getAI, getGenerativeModel, GoogleAIBackend } = await import("https://www.gstatic.com/firebasejs/13.4.0/firebase-ai.js");
+    const ai = getAI(app, { backend: new GoogleAIBackend() });
+    const data = await new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = ko; r.readAsDataURL(blob); });
+    const prompt = 'Esta es una foto de la lista de estudiantes de un salón de un colegio colombiano. ' +
+      'Extrae SOLO los nombres completos de las estudiantes, en el mismo orden de la lista. ' +
+      'Estas listas suelen estar escritas como APELLIDOS NOMBRES (primero los dos apellidos): devuelve cada una como "Nombres Apellidos", ' +
+      'con mayúscula inicial y las tildes tal como aparecen. Ignora números, encabezados, firmas, chulitos y letras sueltas como "N". ' +
+      'Responde solo con JSON así: {"nombres":["María Camila Angucho Daza"]}';
+    let last;
+    for (const model of ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-2.5-flash']) {
+      try {
+        const m = getGenerativeModel(ai, { model, generationConfig: { responseMimeType: 'application/json', temperature: 0 } });
+        const res = await m.generateContent([prompt, { inlineData: { mimeType: blob.type || 'image/jpeg', data } }]);
+        const j = JSON.parse(res.response.text().replace(/^```json|```$/g, '').trim());
+        if (Array.isArray(j.nombres)) return j.nombres.map(n => String(n).trim()).filter(Boolean);
+      } catch (e) { last = e; if (!/not found|404|unsupported|not supported/i.test(String(e && e.message))) break; }
+    }
+    throw last || new Error('No se pudo leer la lista');
+  },
   deleteStudent: id => deleteDoc(doc(db, 'students', id)),
   createTask: d => addDoc(collection(db, 'tasks'), d).then(r => r.id),
   deleteTask: id => deleteDoc(doc(db, 'tasks', id)),

@@ -554,7 +554,7 @@ function cardsHTML(list){return list.map(s=>`<div class="ucard"><b>${esc(s.name)
 function printCards(list){let p=$('#print');if(!p){p=document.createElement('div');p.id='print';document.body.appendChild(p)}p.innerHTML=`<div class="cards">${cardsHTML(list)}</div>`;setTimeout(()=>window.print(),100)}
 function parseNames(text){
   const bad=/^(lista|grado|curso|nombre|nombres|apellidos|n[°ºo.]|no\.?|docente|profesor|institucion|colegio|periodo|año|fecha|asignatura)/i;
-  return [...new Set(text.split(/\n+/).map(l=>l.replace(/[0-9|_\-–.,;:()\[\]{}"'*#°º]+/g,' ').replace(/\s+/g,' ').trim())
+  return [...new Set(text.split(/\n+/).map(l=>l.replace(/(^|\s)[A-Za-zÑñ](?=\s|$)/g,' ').replace(/[0-9|_\-–.,;:()\[\]{}"'*#°º]+/g,' ').replace(/\s+/g,' ').trim())
     .filter(l=>l.length>=5&&l.split(' ').length>=2&&/^[A-Za-zÁÉÍÓÚÑÜáéíóúñü ]+$/.test(l)&&!bad.test(l))
     .map(l=>l.toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase())))];
 }
@@ -578,15 +578,27 @@ async function shrink(file,max=2000){
     return cv;
   }catch(e){return file}
 }
+const toBlob=cv=>cv instanceof Blob?Promise.resolve(cv):new Promise(r=>cv.toBlob(r,'image/jpeg',.85));
+function threshold(cv){try{const g=cv.getContext('2d'),d=g.getImageData(0,0,cv.width,cv.height),px=d.data,h=new Array(256).fill(0);
+  for(let i=0;i<px.length;i+=4)h[px[i]]++;let tot=px.length/4,sum=0;for(let t=0;t<256;t++)sum+=t*h[t];let sB=0,wB=0,best=0,th=128;
+  for(let t=0;t<256;t++){wB+=h[t];if(!wB)continue;const wF=tot-wB;if(!wF)break;sB+=t*h[t];const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)**2;if(v>best){best=v;th=t}}
+  for(let i=0;i<px.length;i+=4){const v=px[i]>th?255:0;px[i]=px[i+1]=px[i+2]=v}g.putImageData(d,0,0)}catch(e){}return cv}
 async function runOCR(file){
   V.ocr='loading';render();
+  // 1) Lectura con IA (Gemini en Firebase). Si no está activada, se usa el lector básico.
   try{
-    file=await shrink(file);
+    const blob=await toBlob(await shrink(file,1600));
+    const names=await DB.readNameList(blob);
+    if(names.length){V.ocr=uniqUsers(names.map(mkUser));render();toast(`Leí ${names.length} nombres. Revísalos antes de crear los usuarios.`);return}
+  }catch(e){console.warn('IA no disponible, uso el lector básico',e)}
+  // 2) Lector básico (Tesseract) con la foto en blanco y negro
+  try{
+    const cv=threshold(await shrink(file,2400));
     if(!window.Tesseract)await new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)});
-    const r=await Tesseract.recognize(file,'spa');
+    const r=await Tesseract.recognize(cv,'spa');
     const names=parseNames(r.data.text);
     if(!names.length){V.ocr=null;render();toast('No pude leer nombres en la foto. Prueba con más luz o escribe la lista.');return}
-    V.ocr=uniqUsers(names.map(mkUser));render();
+    V.ocr=uniqUsers(names.map(mkUser));render();toast('Usé el lector básico: revisa bien los nombres. Si la lista está como "Apellidos Nombres", toca "voltear".');
   }catch(e){V.ocr=null;render();toast('No se pudo leer la foto. Puedes escribir o pegar la lista.')}
 }
 async function saveStudents(){
@@ -688,7 +700,7 @@ document.addEventListener('click',async e=>{
     D.classes=D.classes.filter(x=>x.id!=c.id);EC=null;render();toast('Curso eliminado.')}
   }catch(err){fail(err);render()}
 });
-function mkUser(name){const p=name.trim().split(/\s+/);return{name:name.trim(),user:slug(p[0])+'.'+slug(p[p.length>2?p.length-2:p.length-1]||'').slice(0,3),pics:[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)])}}
+function mkUser(name){const PART=/^(de|del|la|las|los|y|da|do|dos|van|von)$/i;const p=name.trim().split(/\s+/).filter((w,i)=>i==0||!PART.test(w));return{name:name.trim(),user:slug(p[0])+'.'+slug(p[p.length>2?p.length-2:p.length-1]||'').slice(0,3),pics:[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)])}}
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id=='q'){V.q=t.value;const pos=t.selectionStart;render();const q=$('#q');q.focus();q.setSelectionRange(pos,pos)}
