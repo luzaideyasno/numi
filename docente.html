@@ -445,7 +445,7 @@ function resumen(){
   <div class="rows">${byIsl.map(x=>`<div class="hrow"><span>${x.n}</span><span class="track"><i style="--c:${x.c};width:${x.v?x.v/5*100:0}%"></i></span><em>${f1(x.v)}</em></div>`).join('')}</div></section>
   <section class="card"><h3>Desempeño del salón</h3><div class="stackbar">${bands.map(b=>`<i style="background:${b.c};width:${b.n/st.length*100}%"></i>`).join('')}<i style="background:var(--line);width:${sin/st.length*100}%"></i></div>
   <div class="legend">${bands.map(b=>`<span><i style="background:${b.c}"></i>${b.l}: ${b.n}</span>`).join('')}<span><i style="background:var(--line)"></i>Sin nota: ${sin}</span></div>
-  <p class="muted" style="font-size:14px;margin-top:var(--s2)">Escala del Decreto 1290: Superior 4,6–5,0 · Alto 4,0–4,5 · Básico 3,0–3,9 · Bajo menos de 3,0.</p></section>
+  <p class="muted" style="font-size:14px;margin-top:var(--s2)">Niveles de desempeño: Superior 4,6–5,0 · Alto 4,0–4,5 · Básico 3,0–3,9 · Bajo menos de 3,0.</p></section>
   <section class="card"><h3>Necesitan apoyo</h3>${need.length?need.map(({s,r})=>`<button class="alert" data-a="stu" data-id="${s.id}"><i class="av" style="background:var(--gold);color:#2b1d3a">${s.name[0]}</i><div><b>${esc(s.name)}</b><small>${r.join(' · ')}</small></div><span class="link">Ver</span></button>`).join(''):'<p class="muted">¡Todas van bien!</p>'}</section>
   <section class="card"><h3>Actividad reciente</h3>${recent.map(({s,r})=>{const n=retoNota(r);return `<button class="alert" data-a="stu" data-id="${s.id}"><i class="av" style="background:${ISL[r.isl].c}">${s.name[0]}</i><div><b>${esc(s.name)}</b><small>${ISL[r.isl].n} · Nivel ${r.lvl+1} · ${ago(r.t)}</small></div><span class="nota">${f1(n)}</span></button>`}).join('')}</section></div>`;
 }
