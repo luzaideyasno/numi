@@ -36,11 +36,13 @@ function message(e) {
     'auth/email-already-in-use': 'Ese correo ya tiene una cuenta en Numi.',
     'auth/invalid-email': 'El correo no es válido.',
     'auth/weak-password': 'La contraseña es muy corta.',
-    'auth/operation-not-allowed': 'Falta activar "Correo electrónico/contraseña" en Firebase Authentication.',
-    'permission-denied': 'No tienes permiso para hacer esto. Revisa las reglas de Firestore o los accesos del profesor.',
+    'auth/operation-not-allowed': 'El ingreso no está disponible en este momento. Avisa al administrador de Numi.',
+    'permission-denied': 'No tienes permiso para hacer esto. Pide a la coordinación que revise tus accesos.',
     'unavailable': 'Sin conexión con el servidor. Los cambios se guardarán cuando vuelva internet.'
   };
-  return m[code] || (e && e.message) || 'Ocurrió un error.';
+  if (m[code]) return m[code];
+  console.error(e); // el detalle técnico queda en la consola, no en pantalla
+  return 'Algo salió mal. Revisa tu conexión e inténtalo de nuevo.';
 }
 
 export const NumiDB = {

@@ -252,8 +252,8 @@ function render(){
   <button class="btn" type="submit" ${V.busy?'disabled':''}>${V.busy?'Guardando…':'Guardar y entrar'}</button>
   <p style="color:var(--coral);font-weight:700;min-height:1.5em" aria-live="polite">${esc(V.err||'')}</p></form></div>`;return}
   if(V.screen=='boot'||V.screen=='loading'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div style="display:grid;place-items:center;gap:12px;text-align:center"><svg viewBox="0 0 120 120" style="width:120px"><use href="#numi"/></svg><div class="spin"></div><p class="muted">${V.screen=='boot'?'Conectando…':'Cargando cursos y notas…'}</p></div></div>`;return}
-  if(V.screen=='noaccess'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>Tu cuenta no tiene acceso al panel</h2><p class="muted" style="margin:8px 0 16px">Pide a la coordinación que te cree como profesor en Numi. Si eres la coordinación, revisa que exista el documento <b>users/${esc(DB.user()?.uid||'')}</b> con role "admin" en Firestore.</p><button class="btn" data-a="logout">Salir</button></div></div>`;return}
-  if(V.screen=='nodb'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>No se pudo conectar con Firebase</h2><p class="muted" style="margin-top:8px">Abre el panel desde su dirección publicada (GitHub Pages) y revisa la conexión a internet.</p></div></div>`;return}
+  if(V.screen=='noaccess'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>Tu cuenta no tiene acceso al panel</h2><p class="muted" style="margin:8px 0 16px">Pide a la coordinación que te cree como profesor en Numi.</p><button class="btn" data-a="logout">Salir</button></div></div>`;return}
+  if(V.screen=='nodb'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>No se pudo conectar con Numi</h2><p class="muted" style="margin-top:8px">Revisa tu conexión a internet y vuelve a abrir el panel.</p></div></div>`;return}
   let body='';
   if(V.screen=='home')body=V.role=='admin'?adminHome():home();
   else if(V.screen=='student')body=student();
@@ -520,7 +520,7 @@ function usuarios(){
   const c=C();
   let ocr='';
   if(V.ocr==='loading')ocr=`<div class="drop"><div class="spin" aria-label="Leyendo"></div><b>Numi está leyendo los nombres de la foto…</b></div>`;
-  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3>${V.aiErr?`<p class="note" style="background:var(--warn);border-radius:14px;padding:10px 14px;margin-bottom:var(--s2);font-size:14px;overflow-wrap:anywhere"><b>Se usó el lector básico.</b> ${esc(V.aiErr)}</p>`:''}<p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos y quita lo que no sea un nombre.</p><button class="btn ghost sm" data-a="flip" style="margin-bottom:var(--s2)">La lista está como "Apellidos Nombres": voltear</button>
+  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3>${V.aiErr?`<p class="note" style="background:var(--warn);border-radius:14px;padding:10px 14px;margin-bottom:var(--s2);font-size:14px">Esta vez no pude leer la foto tan bien como siempre. Revisa con cuidado cada nombre, o toca <b>Cancelar</b> e inténtalo de nuevo en unos minutos.</p>`:''}<p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos y quita lo que no sea un nombre.</p><button class="btn ghost sm" data-a="flip" style="margin-bottom:var(--s2)">La lista está como "Apellidos Nombres": voltear</button>
     <div class="olist">${V.ocr.map((r,k)=>`<div class="orow"><span class="onum">${k+1}</span><div class="ofld"><input value="${esc(r.name)}" data-ocr="${k}" aria-label="Nombre ${k+1}"><small>Usuario <code>${r.user}</code> · clave <span class="pic">${r.pics.map(pic).join('')}</span></small></div><button class="link" data-a="ocrdel" data-k="${k}" aria-label="Quitar">Quitar</button></div>`).join('')}</div>
     <div class="tools" style="margin-top:var(--s3)"><button class="btn ghost" data-a="ocradd">Agregar estudiante</button><button class="btn alt" data-a="ocrsave">Crear ${V.ocr.length} usuarios</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
   else if(V.ocr==='paste')ocr=`<section class="card"><h3>Escribe o pega la lista</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Un nombre por línea.</p><textarea id="plist" style="min-height:180px" placeholder="Valentina Restrepo Gómez&#10;Sofía Zapata Arango"></textarea><div class="tools" style="margin-top:var(--s2)"><button class="btn" data-a="pasteok">Revisar lista</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
@@ -530,7 +530,9 @@ function usuarios(){
   <section class="card"><h3>Tarjetas de ingreso de ${c.name}</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Imprímelas y entrega a cada niña la suya.</p>
   ${c.students.length?'':'<p class="muted">Cuando crees las estudiantes, aquí aparecen sus tarjetas.</p>'}<div class="cards">${c.students.slice(0,6).map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${s.user}</code><span class="muted" style="font-size:13px">Clave</span><span class="pic">${s.pics.map(pic).join('')}</span></div>`).join('')}</div>
   <div class="tools" style="margin-top:var(--s3)"><button class="btn" data-a="print" ${c.students.length?'':'disabled'}>Imprimir las ${c.students.length} tarjetas</button></div></section>
-  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Nueva clave</button> ${C().closed?'':`<button class="link" data-a="delst" data-id="${s.id}" style="color:var(--coral)">Eliminar</button>`}</td></tr>`).join('')}</tbody></table></details></section></div>
+  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Nueva clave</button> ${C().closed?'':`<button class="link" data-a="delst" data-id="${s.id}" style="color:var(--coral)">Eliminar</button>`}</td></tr>`).join('')}</tbody></table>
+  ${!c.closed&&c.students.length?(canWipe(c)?`<div style="margin-top:var(--s3);padding-top:var(--s2);border-top:1px solid var(--line)"><b>¿Te equivocaste de listado?</b><p class="muted" style="font-size:14px;margin:4px 0 var(--s2)">Como ninguna estudiante ha entrado ni tiene notas, puedes borrar todo el listado y volver a subir la foto correcta.</p><button class="btn ghost" style="color:var(--coral)" data-a="wipe">Eliminar las ${c.students.length} estudiantes</button></div>`
+    :`<p class="muted" style="font-size:13px;margin-top:var(--s3)">El listado completo ya no se puede borrar porque algunas estudiantes ya entraron o tienen notas. Puedes eliminarlas una por una.</p>`):''}</details></section></div>
   <section class="card" style="align-self:start"><h3>Así entra la niña</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Escribe su usuario y toca sus 3 dibujitos en orden. Es más fácil que una contraseña a esta edad.</p>
   <div class="phone"><svg viewBox="0 0 120 120" style="width:80px;margin:0 auto"><use href="#numi"/></svg><b style="font-family:Fredoka;font-size:22px">¡Hola! ¿Quién eres?</b><input value="${c.students[0]?.user||'valentina.res'}" aria-label="Usuario de ejemplo" readonly>
   <span style="font-weight:700;font-size:14px">Toca tus 3 dibujitos</span><div class="picks">${PICS.map(k=>`<span class="${(c.students[0]?.pics||['estrella','luna','flor']).includes(k)?'on':''}">${pic(k)}</span>`).join('')}</div>
@@ -598,6 +600,8 @@ function aiWhy(e){const m=String(e&&(e.message||e.code)||e||'');
     :/network|Failed to fetch|import|dynamically imported/i.test(m)?'No se pudo conectar con la IA.'
     :'La IA respondió con un error.';
   return why+' Detalle: '+m.slice(0,240)}
+// Se puede borrar el listado completo solo si nadie ha entrado (sin retos ni armario) ni tiene notas u observaciones
+function canWipe(c){return c.students.every(s=>!s.retos.length&&!s.wardrobe&&!D.notes[s.id]&&!ISL.some((_,i)=>D.overrides[s.id+'|'+i]!=null))}
 async function runOCR(file){
   V.ocr='loading';V.aiErr='';render();
   // 1) Lectura con IA (Gemini en Firebase). Si no está activada, se usa el lector básico.
@@ -605,7 +609,7 @@ async function runOCR(file){
     const blob=await toBlob(await shrink(file,1600));
     const names=await DB.readNameList(blob);
     if(names.length){V.ocr=uniqUsers(names.map(mkUser));render();toast(`Leí ${names.length} nombres. Revísalos antes de crear los usuarios.`);return}
-  }catch(e){console.warn('IA no disponible, uso el lector básico',e);V.aiErr=aiWhy(e)}
+  }catch(e){console.warn('IA no disponible, uso el lector básico:',aiWhy(e));V.aiErr=true}
   // 2) Lector básico (Tesseract) con la foto en blanco y negro
   try{
     const cv=threshold(await shrink(file,2400));
@@ -613,7 +617,7 @@ async function runOCR(file){
     const r=await Tesseract.recognize(cv,'spa');
     const names=parseNames(r.data.text);
     if(!names.length){V.ocr=null;render();toast('No pude leer nombres en la foto. Prueba con más luz o escribe la lista.');return}
-    V.ocr=uniqUsers(names.map(mkUser));render();toast('Usé el lector básico: revisa bien los nombres. Si la lista está como "Apellidos Nombres", toca "voltear".');
+    V.ocr=uniqUsers(names.map(mkUser));render();toast('Revisa bien los nombres. Si la lista está como "Apellidos Nombres", toca "voltear".');
   }catch(e){V.ocr=null;render();toast('No se pudo leer la foto. Puedes escribir o pegar la lista.')}
 }
 async function saveStudents(){
@@ -675,13 +679,18 @@ document.addEventListener('click',async e=>{
   else if(a=='ocrsave'){if(!V.ocr.length)return;await saveStudents()}
   else if(a=='print'){printCards(C().students)}
   else if(a=='reset'){const s=C().students.find(x=>x.id==b.dataset.id),np=[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)]);await DB.changeStudentPics(s,np);s.pics=np;render();toast('Nueva clave para '+s.name.split(' ')[0]+'. Imprime su tarjeta otra vez.')}
+  else if(a=='wipe'){const c=C();if(!canWipe(c)){toast('Ya no se puede: alguna estudiante entró o tiene notas.');render();return}
+    if(!confirm(`¿Eliminar las ${c.students.length} estudiantes de ${c.name}?\n\nSe borran sus usuarios y claves, y las tarjetas impresas dejan de servir. Después puedes subir la foto del listado correcto.`))return;
+    const all=[...c.students];let k=0,bad=0;b.disabled=true;
+    for(const s of all){b.textContent=`Eliminando… ${++k} de ${all.length}`;try{await DB.removeStudent(s);c.students=c.students.filter(x=>x.id!=s.id)}catch(e){bad++;console.error(e)}}
+    render();toast(bad?`Se eliminaron ${all.length-bad} estudiantes. ${bad} no se pudieron eliminar; inténtalo otra vez.`:'Listo, se borró el listado. Ya puedes subir la foto correcta.')}
   else if(a=='delst'){const s=C().students.find(x=>x.id==b.dataset.id);if(!s)return;
     if(!confirm(`¿Eliminar a ${s.name} del todo?\n\n• Ya no podrá entrar a Numi.\n• Se borran sus ${s.retos.length} retos, sus notas y observaciones.\n• Deja de contar en los promedios del salón.\n\nEsto no se puede deshacer.`))return;
     b.disabled=true;b.textContent='Eliminando…';clearTimeout(saveT['obs'+s.id]);
     const r=await DB.removeStudent(s);
     C().students=C().students.filter(x=>x.id!=s.id);delete D.notes[s.id];ISL.forEach((_,i)=>delete D.overrides[s.id+'|'+i]);
     if(V.screen=='student'){V.screen='salon';V.tab='estudiantes';V.student=null;scrollTo(0,0)}
-    render();toast(r.resultsBlocked?`${s.name.split(' ')[0]} fue eliminada y ya no cuenta en los promedios. Falta publicar las reglas nuevas de Firestore para borrar también sus retos guardados.`:`${s.name.split(' ')[0]} fue eliminada del todo.`)}
+    render();toast(r.resultsBlocked?`${s.name.split(' ')[0]} fue eliminada y ya no cuenta en los promedios.`:`${s.name.split(' ')[0]} fue eliminada del todo.`)}
   else if(a=='screset'){C().scale={...DEF_SCALE};render();await DB.setScale(C().id,C().scale);toast('Escala restablecida.')}
   /* súper usuario: profesores */
   else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;NT.phone=$('#ntp').value;toggleAccess(NT.access,a,b);render()}
@@ -694,7 +703,7 @@ document.addEventListener('click',async e=>{
     if(NT.phone&&!waNum(NT.phone)){toast('Revisa el celular: debe tener 10 números, por ejemplo 300 123 4567.');return}
     if(!NT.name||!/^\S+@\S+\.\S+$/.test(NT.email)){toast('Escribe el nombre y un correo válido.');return}
     if(!NT.access.length){toast('Elige al menos un grado o curso.');return}
-    b.disabled=true;let made;try{made=await DB.createTeacher(NT)}catch(err){b.disabled=false;if(err.code=='auth/email-already-in-use'){toast('Ese correo ya existe en Firebase (por ejemplo, un profesor eliminado). Bórralo en Firebase → Authentication → Usuarios y vuelve a crearlo.');return}throw err}
+    b.disabled=true;let made;try{made=await DB.createTeacher(NT)}catch(err){b.disabled=false;if(err.code=='auth/email-already-in-use'){toast('Ese correo ya tiene una cuenta en Numi (por ejemplo, de un profesor eliminado). Usa otro correo o pide ayuda al administrador de Numi.');return}throw err}
     const {uid,pw}=made;D.teachers.push({id:uid,role:'teacher',...NT,access:[...NT.access]});D.teachers.sort(byName);
     const t={...NT};NT={name:'',email:'',phone:'',access:[]};render();showCreds(t,pw)}
   else if(a=='credcopy'){navigator.clipboard.writeText(CREDMSG).then(()=>toast('Mensaje copiado. Pégalo en WhatsApp o en un correo.'),()=>toast('No se pudo copiar.'))}
