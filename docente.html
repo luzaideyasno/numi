@@ -590,7 +590,8 @@ function threshold(cv){try{const g=cv.getContext('2d'),d=g.getImageData(0,0,cv.w
   for(let i=0;i<px.length;i+=4){const v=px[i]>th?255:0;px[i]=px[i+1]=px[i+2]=v}g.putImageData(d,0,0)}catch(e){}return cv}
 // Explica en palabras simples por qué no respondió Gemini (y deja el detalle técnico para revisarlo)
 function aiWhy(e){const m=String(e&&(e.message||e.code)||e||'');
-  const why=/api.?key|API_KEY|blocked|are blocked|referer/i.test(m)?'La clave de la app no tiene permiso para usar la IA.'
+  const why=/App Check|reCAPTCHA/i.test(m)?'Falta terminar la protección App Check de Firebase.'
+    :/api.?key|API_KEY|blocked|are blocked|referer/i.test(m)?'La clave de la app no tiene permiso para usar la IA.'
     :/quota|RESOURCE_EXHAUSTED|429/i.test(m)?'Se acabó el cupo gratuito de la IA por ahora.'
     :/has not been used|disabled|SERVICE_DISABLED|not enabled|PERMISSION_DENIED|403/i.test(m)?'La IA no está activada del todo en Firebase.'
     :/location|region|not available in your country|FAILED_PRECONDITION/i.test(m)?'La IA gratuita no está disponible en esta región.'

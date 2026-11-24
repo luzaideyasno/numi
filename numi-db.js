@@ -5,7 +5,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, creat
   sendPasswordResetEmail, updatePassword, deleteUser } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc,
   updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
-import { firebaseConfig, STUDENT_DOMAIN } from "./firebase-config.js";
+import { firebaseConfig, STUDENT_DOMAIN, RECAPTCHA_SITE_KEY } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -14,6 +14,7 @@ let db;
 try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
 catch (e) { db = initializeFirestore(app, {}); }
 
+let appCheckOn = false;
 const PICS = ['estrella', 'corazon', 'luna', 'sol', 'flor', 'nube'];
 const studentEmail = (user, year) => `${user}.${year}@${STUDENT_DOMAIN}`;
 const studentPass = (pics, year) => `numi-${pics.map(p => PICS.indexOf(p)).join('')}-${year}`;
@@ -126,7 +127,14 @@ export const NumiDB = {
   // Lee los nombres de una foto de la lista con Gemini (Firebase AI Logic). Devuelve ["Nombres Apellidos", ...]
   async readNameList(blob) {
     const { getAI, getGenerativeModel, GoogleAIBackend } = await import("https://www.gstatic.com/firebasejs/13.4.0/firebase-ai.js");
-    const ai = getAI(app, { backend: new GoogleAIBackend() });
+    // Firebase exige App Check para usar Gemini: se activa solo aquí (no afecta el juego de las niñas)
+    if (!RECAPTCHA_SITE_KEY) throw new Error('Falta la clave de reCAPTCHA (App Check) en firebase-config.js');
+    if (!appCheckOn) {
+      const { initializeAppCheck, ReCaptchaV3Provider } = await import("https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js");
+      initializeAppCheck(app, { provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: false });
+      appCheckOn = true;
+    }
+    const ai = getAI(app, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true });
     const data = await new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = ko; r.readAsDataURL(blob); });
     const prompt = 'Esta es una foto de la lista de estudiantes de un salón de un colegio colombiano. ' +
       'Extrae SOLO los nombres completos de las estudiantes, en el mismo orden de la lista. ' +
