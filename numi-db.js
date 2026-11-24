@@ -5,7 +5,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, creat
   sendPasswordResetEmail, updatePassword, deleteUser } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc,
   updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
-import { firebaseConfig, STUDENT_DOMAIN, RECAPTCHA_SITE_KEY } from "./firebase-config.js";
+import { firebaseConfig, STUDENT_DOMAIN, RECAPTCHA_SITE_KEY, RECAPTCHA_ENTERPRISE } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -130,8 +130,9 @@ export const NumiDB = {
     // Firebase exige App Check para usar Gemini: se activa solo aquí (no afecta el juego de las niñas)
     if (!RECAPTCHA_SITE_KEY) throw new Error('Falta la clave de reCAPTCHA (App Check) en firebase-config.js');
     if (!appCheckOn) {
-      const { initializeAppCheck, ReCaptchaV3Provider } = await import("https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js");
-      initializeAppCheck(app, { provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: false });
+      const { initializeAppCheck, ReCaptchaV3Provider, ReCaptchaEnterpriseProvider } = await import("https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js");
+      const provider = RECAPTCHA_ENTERPRISE ? new ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY) : new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY);
+      initializeAppCheck(app, { provider, isTokenAutoRefreshEnabled: false });
       appCheckOn = true;
     }
     const ai = getAI(app, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true });

@@ -12,5 +12,7 @@ export const firebaseConfig = {
 // Dominio interno para las cuentas de las niñas (entran solo con usuario y dibujitos).
 export const STUDENT_DOMAIN = "estudiantes.numi.app";
 
-// Clave del sitio de reCAPTCHA v3 (es pública). La usa App Check para que Gemini lea la foto de la lista.
+// Clave del sitio de reCAPTCHA (es pública). La usa App Check para que Gemini lea la foto de la lista.
+// RECAPTCHA_ENTERPRISE: true si la clave es de reCAPTCHA Enterprise; false si es reCAPTCHA v3.
 export const RECAPTCHA_SITE_KEY = '';
+export const RECAPTCHA_ENTERPRISE = true;
