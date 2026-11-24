@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Numi — tu contraseña</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: tranquila y confiable, que se note que es Numi y no un correo extraño
+   IDEA: la tarjeta de bienvenida del colegio
+   PICTURE: Numi arriba sobre amarillo, debajo el formulario en una sola columna
+   COLOUR and TYPE: amarillo sol, tinta morada, coral para la acción; Fredoka y Nunito
+   LAYOUT: una tarjeta centrada de máx. 440px */
+:root{color-scheme:light dark;--bg:light-dark(#f7f4fb,#17132a);--ink:light-dark(#2b1d3a,#f3ecff);--card:light-dark(#fff,#241d3d);--line:light-dark(#e9e1f2,#3a3058);--muted:light-dark(#6f6383,#bcaed3);--coral:#e9456f;--teal:#13998b}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
+.box{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:26px;overflow:hidden}
+.top{background:#ffc93c;display:grid;place-items:center;padding:24px 20px 18px;color:#2b1d3a;text-align:center}
+.top svg{width:110px;height:110px}.top b{font-family:Fredoka,sans-serif;font-size:26px;display:block}.top span{font-weight:700;font-size:14px}
+form,.msg{padding:24px;display:grid;gap:14px}
+h1{font-family:Fredoka,sans-serif;font-size:28px;line-height:1.1;margin:0}
+p{margin:0}.muted{color:var(--muted)}
+label{font-weight:700;font-size:15px;display:block;margin-bottom:6px}
+input{width:100%;font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.btn{display:inline-flex;justify-content:center;align-items:center;min-height:48px;padding:0 20px;border:0;border-radius:14px;background:var(--coral);color:#fff;font:inherit;font-weight:800;text-decoration:none;cursor:pointer;box-shadow:0 3px 0 #b72f53}
+.btn:disabled{opacity:.6}
+.err{color:var(--coral);font-weight:700;min-height:1.5em}
+.ok{color:var(--teal);font-weight:800}
+.spin{width:30px;height:30px;border:4px solid var(--line);border-top-color:var(--coral);border-radius:50%;animation:sp .8s linear infinite;margin:10px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+<main class="box">
+  <div class="top">
+    <svg viewBox="0 0 120 120" role="img" aria-label="Numi"><ellipse cx="60" cy="113" rx="32" ry="5" fill="#000" opacity=".12"/><circle cx="26" cy="54" r="14" fill="#e9456f"/><circle cx="22" cy="76" r="12" fill="#13998b"/><circle cx="30" cy="95" r="10" fill="#a45fd1"/><path d="M40 36 L33 13 L53 28 Z M80 36 L87 13 L67 28 Z" fill="#fff" stroke="#2b1d3a" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="60" cy="67" rx="37" ry="35" fill="#fff" stroke="#2b1d3a" stroke-width="2.5"/><circle cx="44" cy="36" r="11" fill="#e9456f"/><circle cx="58" cy="31" r="10" fill="#13998b"/><circle cx="72" cy="35" r="9" fill="#a45fd1"/><circle cx="34" cy="44" r="8" fill="#ffc93c"/><path d="M60 4 L51 33 L69 33 Z" fill="#ffd34d" stroke="#c98a10" stroke-width="2" stroke-linejoin="round"/><ellipse cx="60" cy="86" rx="23" ry="13" fill="#ffd6e0" stroke="#2b1d3a" stroke-width="2.2"/><circle cx="52" cy="85" r="2.2" fill="#2b1d3a"/><circle cx="68" cy="85" r="2.2" fill="#2b1d3a"/><path d="M53 91 Q60 100 67 91 Z" fill="#e9456f" stroke="#2b1d3a" stroke-width="2" stroke-linejoin="round"/><g fill="none" stroke="#2b1d3a" stroke-width="3" stroke-linecap="round"><path d="M39 65 Q45 57 51 65"/><path d="M69 65 Q75 57 81 65"/></g><ellipse cx="34" cy="76" rx="6" ry="3.5" fill="#ff8fa8" opacity=".75"/><ellipse cx="86" cy="76" rx="6" ry="3.5" fill="#ff8fa8" opacity=".75"/></svg>
+    <b>Numi</b><span>Juega con Numi · matemáticas para el colegio</span>
+  </div>
+  <div id="view"><div class="msg"><div class="spin"></div><p class="muted" style="text-align:center">Revisando tu enlace…</p></div></div>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, verifyPasswordResetCode, confirmPasswordReset } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { firebaseConfig } from "./firebase-config.js";
+const auth = getAuth(initializeApp(firebaseConfig));
+const q = new URLSearchParams(location.search), mode = q.get('mode'), code = q.get('oobCode');
+const view = document.getElementById('view');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const panel = 'docente.html';
+function msg(title, text, ok) {
+  view.innerHTML = `<div class="msg"><h1>${title}</h1><p class="${ok ? 'ok' : 'muted'}">${text}</p><a class="btn" href="${panel}">Ir al panel de Numi</a></div>`;
+}
+if (mode !== 'resetPassword' || !code) {
+  msg('Enlace no válido', 'Este enlace no es para crear una contraseña. Si la necesitas, entra al panel y toca "Olvidé mi contraseña".');
+} else {
+  try {
+    const email = await verifyPasswordResetCode(auth, code);
+    view.innerHTML = `<form id="f"><h1>Crea tu contraseña</h1>
+      <p class="muted">Para la cuenta <b>${esc(email)}</b> del panel docente de Numi.</p>
+      <div><label for="p1">Contraseña nueva (mínimo 6 caracteres)</label><input id="p1" type="password" autocomplete="new-password" required minlength="6"></div>
+      <div><label for="p2">Repite la contraseña</label><input id="p2" type="password" autocomplete="new-password" required minlength="6"></div>
+      <button class="btn" type="submit">Guardar contraseña</button><p class="err" id="e" aria-live="polite"></p></form>`;
+    document.getElementById('f').addEventListener('submit', async e => {
+      e.preventDefault();
+      const p1 = document.getElementById('p1').value, p2 = document.getElementById('p2').value, er = document.getElementById('e'), b = e.target.querySelector('button');
+      if (p1.length < 6) return er.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+      if (p1 !== p2) return er.textContent = 'Las contraseñas no coinciden.';
+      b.disabled = true; b.textContent = 'Guardando…';
+      try { await confirmPasswordReset(auth, code, p1); msg('¡Listo!', `Tu contraseña quedó guardada. Ya puedes entrar al panel con ${esc(email)}.`, true); }
+      catch (err) { b.disabled = false; b.textContent = 'Guardar contraseña'; er.textContent = err.code === 'auth/weak-password' ? 'La contraseña es muy corta.' : 'No se pudo guardar. El enlace pudo vencer: pide uno nuevo en el panel.'; }
+    });
+  } catch (e) {
+    msg('Este enlace ya venció', 'Por seguridad, los enlaces duran poco tiempo y sirven una sola vez. Entra al panel, escribe tu correo y toca "Olvidé mi contraseña" para recibir uno nuevo.');
+  }
+}
+</script>
+</body>
+</html>
