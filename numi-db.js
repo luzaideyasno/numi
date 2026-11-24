@@ -10,7 +10,6 @@ import { firebaseConfig, STUDENT_DOMAIN } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 auth.languageCode = 'es'; // correos de Firebase en español
-auth.languageCode = 'es'; // correos de Firebase en español
 let db;
 try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
 catch (e) { db = initializeFirestore(app, {}); }
