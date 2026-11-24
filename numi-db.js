@@ -133,16 +133,20 @@ export const NumiDB = {
       'Estas listas suelen estar escritas como APELLIDOS NOMBRES (primero los dos apellidos): devuelve cada una como "Nombres Apellidos", ' +
       'con mayúscula inicial y las tildes tal como aparecen. Ignora números, encabezados, firmas, chulitos y letras sueltas como "N". ' +
       'Responde solo con JSON así: {"nombres":["María Camila Angucho Daza"]}';
-    let last;
-    for (const model of ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-2.5-flash']) {
+    let last; const errs = [];
+    for (const model of ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite']) {
       try {
         const m = getGenerativeModel(ai, { model, generationConfig: { responseMimeType: 'application/json', temperature: 0 } });
         const res = await m.generateContent([prompt, { inlineData: { mimeType: blob.type || 'image/jpeg', data } }]);
         const j = JSON.parse(res.response.text().replace(/^```json|```$/g, '').trim());
         if (Array.isArray(j.nombres)) return j.nombres.map(n => String(n).trim()).filter(Boolean);
-      } catch (e) { last = e; if (!/not found|404|unsupported|not supported/i.test(String(e && e.message))) break; }
+      } catch (e) {
+        last = e; errs.push(model + ': ' + String(e && (e.message || e.code) || e));
+        // Si es un problema de la clave o de activación, los otros modelos fallarán igual
+        if (/api.?key|referer|SERVICE_DISABLED|has not been used|Failed to fetch/i.test(String(e && e.message))) break;
+      }
     }
-    throw last || new Error('No se pudo leer la lista');
+    const err = new Error(errs.join(' | ') || 'No se pudo leer la lista'); err.cause = last; throw err;
   },
   deleteStudent: id => deleteDoc(doc(db, 'students', id)),
   // Elimina del todo a una estudiante que se retira: su cuenta de ingreso, sus resultados, sus notas y su ficha.

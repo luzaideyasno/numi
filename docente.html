@@ -520,7 +520,7 @@ function usuarios(){
   const c=C();
   let ocr='';
   if(V.ocr==='loading')ocr=`<div class="drop"><div class="spin" aria-label="Leyendo"></div><b>Numi está leyendo los nombres de la foto…</b></div>`;
-  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos y quita lo que no sea un nombre.</p><button class="btn ghost sm" data-a="flip" style="margin-bottom:var(--s2)">La lista está como "Apellidos Nombres": voltear</button>
+  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3>${V.aiErr?`<p class="note" style="background:var(--warn);border-radius:14px;padding:10px 14px;margin-bottom:var(--s2);font-size:14px;overflow-wrap:anywhere"><b>Se usó el lector básico.</b> ${esc(V.aiErr)}</p>`:''}<p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos y quita lo que no sea un nombre.</p><button class="btn ghost sm" data-a="flip" style="margin-bottom:var(--s2)">La lista está como "Apellidos Nombres": voltear</button>
     <div class="olist">${V.ocr.map((r,k)=>`<div class="orow"><span class="onum">${k+1}</span><div class="ofld"><input value="${esc(r.name)}" data-ocr="${k}" aria-label="Nombre ${k+1}"><small>Usuario <code>${r.user}</code> · clave <span class="pic">${r.pics.map(pic).join('')}</span></small></div><button class="link" data-a="ocrdel" data-k="${k}" aria-label="Quitar">Quitar</button></div>`).join('')}</div>
     <div class="tools" style="margin-top:var(--s3)"><button class="btn ghost" data-a="ocradd">Agregar estudiante</button><button class="btn alt" data-a="ocrsave">Crear ${V.ocr.length} usuarios</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
   else if(V.ocr==='paste')ocr=`<section class="card"><h3>Escribe o pega la lista</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Un nombre por línea.</p><textarea id="plist" style="min-height:180px" placeholder="Valentina Restrepo Gómez&#10;Sofía Zapata Arango"></textarea><div class="tools" style="margin-top:var(--s2)"><button class="btn" data-a="pasteok">Revisar lista</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
@@ -559,6 +559,8 @@ function parseNames(text){
   const bad=/^(lista|grado|curso|nombre|nombres|apellidos|n[°ºo.]|no\.?|docente|profesor|institucion|colegio|periodo|año|fecha|asignatura)/i;
   return [...new Set(text.split(/\n+/).map(l=>l.replace(/(^|\s)[A-Za-zÑñ](?=\s|$)/g,' ').replace(/[0-9|_\-–.,;:()\[\]{}"'*#°º]+/g,' ').replace(/\s+/g,' ').trim())
     .filter(l=>l.length>=5&&l.split(' ').length>=2&&/^[A-Za-zÁÉÍÓÚÑÜáéíóúñü ]+$/.test(l)&&!bad.test(l))
+    .map(l=>l.split(' ').filter(w=>w.length>2||/^(de|la|y|da|do)$/i.test(w)).join(' '))
+    .filter(l=>l.split(' ').length>=2)
     .map(l=>l.toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase())))];
 }
 function uniqUsers(rows){const seen={};D.classes.forEach(c=>c.students.forEach(s=>seen[s.user]=1));rows.forEach(r=>{let u=r.user,n=1;while(seen[u]){n++;u=r.user+n}r.user=u;seen[u]=1});return rows}
@@ -586,14 +588,23 @@ function threshold(cv){try{const g=cv.getContext('2d'),d=g.getImageData(0,0,cv.w
   for(let i=0;i<px.length;i+=4)h[px[i]]++;let tot=px.length/4,sum=0;for(let t=0;t<256;t++)sum+=t*h[t];let sB=0,wB=0,best=0,th=128;
   for(let t=0;t<256;t++){wB+=h[t];if(!wB)continue;const wF=tot-wB;if(!wF)break;sB+=t*h[t];const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)**2;if(v>best){best=v;th=t}}
   for(let i=0;i<px.length;i+=4){const v=px[i]>th?255:0;px[i]=px[i+1]=px[i+2]=v}g.putImageData(d,0,0)}catch(e){}return cv}
+// Explica en palabras simples por qué no respondió Gemini (y deja el detalle técnico para revisarlo)
+function aiWhy(e){const m=String(e&&(e.message||e.code)||e||'');
+  const why=/api.?key|API_KEY|blocked|are blocked|referer/i.test(m)?'La clave de la app no tiene permiso para usar la IA.'
+    :/quota|RESOURCE_EXHAUSTED|429/i.test(m)?'Se acabó el cupo gratuito de la IA por ahora.'
+    :/has not been used|disabled|SERVICE_DISABLED|not enabled|PERMISSION_DENIED|403/i.test(m)?'La IA no está activada del todo en Firebase.'
+    :/location|region|not available in your country|FAILED_PRECONDITION/i.test(m)?'La IA gratuita no está disponible en esta región.'
+    :/network|Failed to fetch|import|dynamically imported/i.test(m)?'No se pudo conectar con la IA.'
+    :'La IA respondió con un error.';
+  return why+' Detalle: '+m.slice(0,240)}
 async function runOCR(file){
-  V.ocr='loading';render();
+  V.ocr='loading';V.aiErr='';render();
   // 1) Lectura con IA (Gemini en Firebase). Si no está activada, se usa el lector básico.
   try{
     const blob=await toBlob(await shrink(file,1600));
     const names=await DB.readNameList(blob);
     if(names.length){V.ocr=uniqUsers(names.map(mkUser));render();toast(`Leí ${names.length} nombres. Revísalos antes de crear los usuarios.`);return}
-  }catch(e){console.warn('IA no disponible, uso el lector básico',e)}
+  }catch(e){console.warn('IA no disponible, uso el lector básico',e);V.aiErr=aiWhy(e)}
   // 2) Lector básico (Tesseract) con la foto en blanco y negro
   try{
     const cv=threshold(await shrink(file,2400));
