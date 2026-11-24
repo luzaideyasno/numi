@@ -229,7 +229,7 @@ const fdate=t=>new Date(t).toLocaleDateString('es-CO',{day:'numeric',month:'shor
 
 /* ---------- estado de la vista ---------- */
 let V={role:'teacher',atab:'colegio',editT:null,screen:'boot',err:'',busy:false,cls:0,tab:'resumen',student:null,q:'',sort:'name',ocr:null};
-function toast(m){$('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
+function toast(m){$('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),Math.max(2800,m.length*65))}
 const C=()=>D.classes[V.cls]||null;
 
 const ME=()=>ME_P;
@@ -655,7 +655,8 @@ document.addEventListener('click',async e=>{
   else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();
     if(!NT.name||!/^\S+@\S+\.\S+$/.test(NT.email)){toast('Escribe el nombre y un correo válido.');return}
     if(!NT.access.length){toast('Elige al menos un grado o curso.');return}
-    b.disabled=true;const {uid,pw}=await DB.createTeacher(NT);D.teachers.push({id:uid,role:'teacher',...NT,access:[...NT.access]});D.teachers.sort(byName);
+    b.disabled=true;let made;try{made=await DB.createTeacher(NT)}catch(err){b.disabled=false;if(err.code=='auth/email-already-in-use'){toast('Ese correo ya existe en Firebase (por ejemplo, un profesor eliminado). Bórralo en Firebase → Authentication → Usuarios y vuelve a crearlo.');return}throw err}
+    const {uid,pw}=made;D.teachers.push({id:uid,role:'teacher',...NT,access:[...NT.access]});D.teachers.sort(byName);
     const t={...NT};NT={name:'',email:'',access:[]};render();showCreds(t,pw)}
   else if(a=='credcopy'){navigator.clipboard.writeText(CREDMSG).then(()=>toast('Mensaje copiado. Pégalo en WhatsApp o en un correo.'),()=>toast('No se pudo copiar.'))}
   else if(a=='credclose'){document.querySelector('.modal')?.remove()}
