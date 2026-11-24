@@ -31,6 +31,7 @@ input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(-
 .ok{color:var(--teal);font-weight:800}
 .spin{width:30px;height:30px;border:4px solid var(--line);border-top-color:var(--coral);border-radius:50%;animation:sp .8s linear infinite;margin:10px auto}
 @keyframes sp{to{transform:rotate(360deg)}}
+.pw{position:relative;display:block}.pw input{padding-right:54px}.eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:46px;height:46px;display:grid;place-items:center;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:12px}.eye svg{width:24px;height:24px}
 @media(prefers-reduced-motion:reduce){.spin{animation:none}}
 </style>
 </head>
@@ -46,6 +47,16 @@ input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, verifyPasswordResetCode, confirmPasswordReset } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js";
+
+/* ojito para ver la contraseña mientras se escribe */
+{const EYE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+const OFF='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const eyes=()=>document.querySelectorAll('input[type=password]:not([data-eye])').forEach(i=>{
+  i.dataset.eye=1;const w=document.createElement('span');w.className='pw';i.parentNode.insertBefore(w,i);w.appendChild(i);
+  const b=document.createElement('button');b.type='button';b.className='eye';b.setAttribute('aria-label','Mostrar contraseña');b.innerHTML=EYE;
+  b.addEventListener('click',()=>{const show=i.type==='password';i.type=show?'text':'password';b.innerHTML=show?OFF:EYE;b.setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña');i.focus()});
+  w.appendChild(b)});
+eyes();new MutationObserver(eyes).observe(document.body,{childList:true,subtree:true});}
 const auth = getAuth(initializeApp(firebaseConfig));
 const q = new URLSearchParams(location.search), mode = q.get('mode'), code = q.get('oobCode');
 const view = document.getElementById('view');
