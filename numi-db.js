@@ -75,6 +75,8 @@ export const NumiDB = {
   deleteCourse: id => deleteDoc(doc(db, 'courses', id)),
   async staff() { return list(await getDocs(collection(db, 'users'))); },
   setAccess: (uid, access) => updateDoc(doc(db, 'users', uid), { access }),
+  // Quita el acceso del profesor al panel (su cuenta de acceso queda en Authentication sin permisos)
+  deleteStaff: uid => deleteDoc(doc(db, 'users', uid)),
   async createTeacher({ name, email, access }) {
     const sec = secondary();
     try {

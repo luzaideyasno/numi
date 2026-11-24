@@ -390,7 +390,7 @@ function aProfes(){
     return `<div class="trow2"><i class="av">${ini(t.name)}</i><div><b>${esc(t.name)}</b><small>${esc(t.email)}</small>
     <div class="qs" style="margin-top:6px">${cs.length?cs.map(c=>`<button class="q q-s" data-a="cls" data-i="${D.classes.indexOf(c)}">${c.name}</button>`).join(''):'<span class="pill p-bad">Sin acceso</span>'}</div>
     <small style="margin-top:4px">${n} estudiantes · promedio ${f1(pr)}</small>
-    ${V.editT==t.id?`<div style="margin-top:var(--s2)">${accessPicker(t.access,'et')}<div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm alt" data-a="etdone">Listo</button></div></div>`:''}</div>
+    ${V.editT==t.id?`<div style="margin-top:var(--s2)">${accessPicker(t.access,'et')}<div class="tools" style="margin:var(--s2) 0 0"><button class="btn sm alt" data-a="etdone">Listo</button><button class="btn sm ghost" style="color:var(--coral)" data-a="etdel" data-id="${t.id}">Eliminar profesor</button></div></div>`:''}</div>
     ${V.editT==t.id?'':`<button class="btn ghost sm" data-a="etedit" data-id="${t.id}">Editar acceso</button>`}</div>`}).join('')}</section></div>`;
 }
 function toggleAccess(list,a,b){
@@ -601,6 +601,8 @@ document.addEventListener('click',async e=>{
   else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;toggleAccess(NT.access,a,b);render()}
   else if(a=='etg'||a=='etc'){toggleAccess(D.teachers.find(t=>t.id==V.editT).access,a,b);render()}
   else if(a=='etedit'){V.editT=b.dataset.id;render()}
+  else if(a=='etdel'){const t=D.teachers.find(x=>x.id==b.dataset.id);if(!confirm(`¿Eliminar a ${t.name} (${t.email})? Ya no podrá entrar al panel. Las notas de sus cursos no se borran.`))return;
+    await DB.deleteStaff(t.id);D.teachers=D.teachers.filter(x=>x.id!=t.id);V.editT=null;render();toast(`${t.name} fue eliminado. Ya puedes crearlo de nuevo con el correo correcto.`)}
   else if(a=='etdone'){const t=D.teachers.find(x=>x.id==V.editT);await DB.setAccess(t.id,t.access);V.editT=null;render();toast('Acceso actualizado.')}
   else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();
     if(!NT.name||!/^\S+@\S+\.\S+$/.test(NT.email)){toast('Escribe el nombre y un correo válido.');return}
