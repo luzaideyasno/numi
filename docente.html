@@ -163,7 +163,18 @@ details summary{cursor:pointer;font-weight:700;color:var(--coral);min-height:32p
 .sheet{max-width:440px;width:100%;max-height:calc(100dvh - 40px);overflow:auto}
 .who .out{display:inline;color:var(--coral);font-size:15px}.help{flex:none}
 .menu{display:grid;gap:8px;margin-top:var(--s2)}.menu button{min-height:52px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:16px;text-align:left;padding:0 16px;color:var(--ink)}.menu .danger{color:var(--coral)}
-.dots{min-width:44px;min-height:44px;border-radius:12px;border:2px solid var(--line);font-size:22px;font-weight:900;line-height:1;color:var(--ink);background:var(--card)}
+.dots{flex:none;width:44px;height:44px;border-radius:50%;border:0;font-size:24px;font-weight:900;line-height:1;color:var(--muted);background:transparent}.dots:hover,.dots:focus-visible{background:var(--bg);color:var(--ink)}
+.slist{display:grid;gap:10px;margin-top:var(--s2)}@media(min-width:760px){.slist{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.scard{display:flex;align-items:center;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:4px 4px 4px 12px;transition:border-color .15s}.scard:hover{border-color:var(--muted)}
+.scard-main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;min-height:68px;padding:8px 0;color:inherit}
+.scard .av{width:42px;height:42px;font-size:15px}
+.sc-txt{flex:1;min-width:0;display:grid;gap:4px}.sc-txt b{font-size:16px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.sc-txt small{color:var(--muted);font-size:13px;font-weight:700}
+.sc-bar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--line);max-width:170px}.sc-bar i{display:block;height:100%}
+.sc-nota{flex:none;display:grid;justify-items:end;gap:3px}.sc-nota b{font-family:Fredoka,sans-serif;font-size:24px;line-height:1;font-weight:700}
+.legend-mini{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:var(--s2);font-size:13px;font-weight:700;color:var(--muted)}.legend-mini i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.ulist{display:grid;margin-top:var(--s2)}.urow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.urow:first-child{border-top:0}
+.u-txt{display:grid;gap:2px}.u-txt b{font-size:15px}.u-txt small{color:var(--muted);font-size:13px;font-weight:700}.urow .pic svg{width:24px;height:24px}
+.u-act{grid-column:1/-1;display:flex;gap:16px}.u-act .link{min-height:32px;font-size:14px}
 .orow.doubt{background:var(--warn);border-radius:12px;padding-inline:8px;border-top-color:transparent}.why{color:light-dark(#7a5500,#ffd77a);font-weight:800;font-size:13px}
 .flipbox{display:grid;gap:6px;background:var(--bg);border-radius:14px;padding:12px 14px;margin-bottom:var(--s2)}.flipbox .btn{justify-self:start}
 [data-sc].bad,#ovin.bad{border-color:var(--coral);background:var(--bad)}
@@ -255,6 +266,8 @@ const C=()=>D.classes[V.cls]||null;
 
 const ME=()=>ME_P;
 const myClasses=()=>V.role=='admin'?D.classes.filter(c=>c.year==D.year):D.classes.filter(c=>c.year==D.year&&(ME_P.access||[]).includes(c.id));
+const AVC=['#e9456f','#13998b','#3d8bd9','#8a5cd1','#e08a00','#d1497f'];
+const avColor=n=>{let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))>>>0;return AVC[h%AVC.length]};
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 function topbar(){const nm=ME_P?ME_P.name:'';return `<header class="bar"><div class="wrap"><button class="brand" data-a="home">${NUMI}<span>Numi <small>${V.role=='admin'?'Súper usuario':'Panel docente'}</small></span></button>
 <button class="btn ghost sm help" data-a="help">Ayuda</button><button class="who" data-a="logout" title="Salir de tu cuenta"><span>${nm}</span><i class="av" style="${V.role=='admin'?'background:var(--ink)':''}">${ini(nm)}</i><b class="out">Salir</b></button></div></header>`}
@@ -482,9 +495,10 @@ function estudiantes(){
   st=[...st].sort(sorters[V.sort]);
   return `<div class="tools"><input id="q" placeholder="Buscar estudiante" value="${esc(V.q)}" aria-label="Buscar estudiante"><select id="sort" aria-label="Ordenar">
   ${[['name','Orden alfabético'],['notaD','Nota: mayor a menor'],['nota','Nota: menor a mayor'],['last','Último ingreso']].map(([k,n])=>`<option value="${k}" ${V.sort==k?'selected':''}>${n}</option>`).join('')}</select></div>
-  <table class="stack"><thead><tr><th>Estudiante</th><th>Último ingreso</th><th class="n">Retos</th><th class="n">A la primera</th><th class="n">Con error</th><th class="n">Con ayuda</th><th class="n">Nota</th><th><span class="sr">Opciones</span></th></tr></thead>
-  <tbody>${st.map(s=>{const c=counts(s),n=finalNota(s),d=desemp(n);return `<tr class="click" data-a="stu" data-id="${s.id}"><td><b>${esc(s.name)}</b></td><td>${ago(last(s))}</td><td class="n">${s.retos.length}</td>
-  <td class="n">${c.t?pct(c.p/c.t):'—'}</td><td class="n">${c.t?pct((c.s+c.m)/c.t):'—'}</td><td class="n">${c.t?pct(c.a/c.t):'—'}</td><td class="n"><span class="nota">${f1(n)}</span> <span class="pill ${d[1]}">${d[0]}</span></td><td class="n"><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></td></tr>`}).join('')}</tbody></table>
+  ${st.length?`<div class="legend-mini"><span><i style="background:var(--teal)"></i>A la primera</span><span><i style="background:var(--gold)"></i>Con error</span><span><i style="background:var(--coral)"></i>Con ayuda</span></div>`:''}
+  <div class="slist">${st.map(s=>{const c=counts(s),n=finalNota(s),d=desemp(n),l=last(s);
+    const bar=c.t?`<span class="sc-bar" aria-label="${pct(c.p/c.t)} a la primera, ${pct((c.s+c.m)/c.t)} con error, ${pct(c.a/c.t)} con ayuda"><i style="width:${c.p/c.t*100}%;background:var(--teal)"></i><i style="width:${(c.s+c.m)/c.t*100}%;background:var(--gold)"></i><i style="width:${c.a/c.t*100}%;background:var(--coral)"></i></span>`:'';
+    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av" style="background:${avColor(s.name)}">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>${l?`${ago(l)} · ${s.retos.length} ${s.retos.length==1?'reto':'retos'}`:'Todavía no ha jugado'}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
   ${st.length?'<p class="muted" style="font-size:14px;margin-top:var(--s2)">Toca a una estudiante para ver sus notas. Con los tres puntitos <b>⋮</b> puedes cambiar su clave o eliminarla si se retiró.</p>':''}
   ${st.length?'':'<p class="muted" style="margin-top:var(--s3)">No hay estudiantes con ese nombre.</p>'}`;
 }
@@ -572,7 +586,7 @@ function usuarios(){
   <section class="card"><h3>Tarjetas de ingreso de ${c.name}</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Imprímelas y entrega a cada niña la suya.</p>
   ${c.students.length?'':'<p class="muted">Cuando crees las estudiantes, aquí aparecen sus tarjetas.</p>'}<div class="cards">${c.students.slice(0,6).map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${s.user}</code><span class="muted" style="font-size:13px">Clave</span><span class="pic">${s.pics.map(pic).join('')}</span></div>`).join('')}</div>
   <div class="tools" style="margin-top:var(--s3)"><button class="btn" data-a="print" ${c.students.length?'':'disabled'}>Imprimir las ${c.students.length} tarjetas</button></div></section>
-  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Cambiar clave</button> ${C().closed?'':`<button class="link" data-a="delst" data-id="${s.id}" style="color:var(--coral)">Eliminar</button>`}</td></tr>`).join('')}</tbody></table>
+  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><div class="ulist">${c.students.map(s=>`<div class="urow"><div class="u-txt"><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code></small></div><span class="pic">${s.pics.map(pic).join('')}</span><div class="u-act"><button class="link" data-a="reset" data-id="${s.id}">Cambiar clave</button>${C().closed?'':`<button class="link" data-a="delst" data-id="${s.id}" style="color:var(--muted)">Eliminar</button>`}</div></div>`).join('')}</div>
   ${!c.closed&&c.students.length&&!canWipe(c)?`<p class="muted" style="font-size:13px;margin-top:var(--s3)">El listado completo ya no se puede borrar porque algunas estudiantes ya entraron o tienen notas. Puedes eliminarlas una por una con <b>Eliminar</b>.</p>`:''}</details></section>
   ${!c.closed&&c.students.length&&canWipe(c)&&!Array.isArray(V.ocr)?`<section class="card"><h3>¿Te equivocaste de listado?</h3><p class="muted" style="font-size:14px;margin:4px 0 var(--s2)">Como ninguna estudiante ha entrado ni tiene notas, puedes borrar todo el listado y volver a subir la foto correcta.</p><button class="btn ghost" style="color:var(--coral)" data-a="wipe">Eliminar las ${c.students.length} estudiantes</button></section>`:''}</div>
   <section class="card" style="align-self:start"><h3>Así entra la niña</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Escribe su usuario y toca sus 3 dibujitos en orden. Es más fácil que una contraseña a esta edad.</p>
@@ -612,7 +626,7 @@ const ST={
   revisar:{tab:'usuarios',t:'Después, revisa y crea',d:'Numi te muestra los nombres que leyó. Corrige los que salgan en <b>amarillo</b> y toca <b>Crear usuarios</b>.'},
   print:{tab:'usuarios',sel:'[data-a=print]',t:'Imprimir las tarjetas',d:'Toca aquí para imprimir una tarjeta por niña con su usuario y sus 3 dibujitos. Recórtalas y entrégale a cada una la suya.',alt:'Cuando crees las estudiantes, aquí aparece el botón para imprimir sus tarjetas.'},
   clave:{tab:'usuarios',sel:'main details summary',t:'Ver la clave de una niña',d:'Toca <b>Estudiantes con usuario</b>: ahí están el usuario y los dibujitos de cada niña. No hace falta cambiarle la clave.',alt:'Cuando crees las estudiantes, aquí verás el usuario y la clave de cada una.'},
-  nina:{tab:'estudiantes',sel:'tr.click td',t:'Ver cómo va cada niña',d:'Ya estás en <b>Estudiantes</b>. Toca el nombre de una niña para ver sus notas y todo lo que ha jugado.'},
+  nina:{tab:'estudiantes',sel:'.scard-main',t:'Ver cómo va cada niña',d:'Ya estás en <b>Estudiantes</b>. Toca el nombre de una niña para ver sus notas y todo lo que ha jugado.'},
   dots:{tab:'estudiantes',sel:'[data-a=stumenu]',t:'Los tres puntitos ⋮',d:'Toca los tres puntitos junto a su nombre para cambiarle la clave, imprimir su tarjeta o eliminarla si se retiró.'},
   borrar:{tab:'estudiantes',t:'Eliminar a la que se retiró',d:'En el menú de los tres puntitos, toca <b>Eliminar estudiante (se retiró)</b> y confirma. Deja de contar en los promedios.'},
   ajuste:{student:true,sel:'[data-a=ovedit]',t:'Poner una nota a mano',d:'Esta es la ficha de una niña. Toca <b>Ajustar nota</b> en la isla que quieras, escribe la nota de 1,0 a 5,0 y toca <b>Guardar</b>.'},
