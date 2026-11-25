@@ -258,6 +258,12 @@ export const NumiDB = {
       throw e;
     });
   },
+  // Marca que la niña entró o empezó un reto (aunque no lo termine), para que el panel no diga que no ha jugado
+  markSeen: id => {
+    const u = auth.currentUser;
+    if (!u || !id || u.uid !== id) return Promise.resolve();
+    return updateDoc(doc(db, 'students', id), { 'st.seen': Date.now() }).catch(() => {});
+  },
   saveWardrobe: (w, id) => {
     const u = auth.currentUser;
     if (!u || !id || u.uid !== id) return Promise.reject(Object.assign(new Error('La sesión cambió'), { code: 'numi/session-changed' }));

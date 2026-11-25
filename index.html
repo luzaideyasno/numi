@@ -40,6 +40,8 @@ h2{font-size:clamp(26px,6vw,34px);line-height:1.1;margin:0;text-wrap:balance}
 @keyframes pulse{40%{transform:scale(1.25);background:var(--gold)}}
 .ibtn{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;border:3px solid var(--line);background:var(--card)}
 .ibtn svg{width:24px;height:24px}
+.out{height:48px;padding:0 14px;border-radius:99px;border:3px solid var(--line);background:var(--card);color:var(--coral);font-weight:700;font-size:17px;white-space:nowrap}
+@media(max-width:430px){.top.acct .logo span{display:none}.top.acct{gap:6px}.top.acct .ibtn{width:44px;height:44px}}
 /* portada */
 .hero{background:var(--sun);padding:var(--s5) 0 var(--s6)}
 .hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:center;gap:var(--s4)}
@@ -734,8 +736,9 @@ async function enterAccount(st){
   // Resumen de la niña (1 sola lectura). Si tenía retos de antes del resumen, se calcula una vez y se guarda.
   let stt=st.st;
   let redo=false;try{redo=localStorage.getItem('numi-rehacer-'+st.id)=='1'}catch(e){}
-  if(!stt||!stt.v||redo){let rs=[];try{rs=await DB.myResults()}catch(e){toast('No se pudo cargar tu progreso. Revisa el internet.')}stt=DB.buildStats(rs);DB.saveStats(st.id,stt).then(()=>{try{localStorage.removeItem('numi-rehacer-'+st.id)}catch(e){}}).catch(()=>{})}
+  if(!stt||!stt.v||redo){let rs=[];try{rs=await DB.myResults()}catch(e){toast('No se pudo cargar tu progreso. Revisa el internet.')}stt=DB.buildStats(rs);stt.seen=Date.now();SEEN_T=stt.seen;DB.saveStats(st.id,stt).then(()=>{try{localStorage.removeItem('numi-rehacer-'+st.id)}catch(e){}}).catch(()=>{})}
   applyStats(stt);
+  if(SEEN_T<Date.now()-5000)seenNow(st.id,true);
   ACCT={st};watchSession();
   try{await sendPending(st)}catch(e){}
   try{const ts=await DB.myTasks(st.courseId);TASKS=ts.filter(t=>t.due>=Date.now()&&!doneIn(t)).sort((a,b)=>a.due-b.due)}catch(e){TASKS=[]}
@@ -760,6 +763,11 @@ function sessionLost(){if(lostShown||!ACCT)return;lostShown=true;const nm=first(
   LG={user:'',pics:[],err:`${nm}, se cerró tu sesión. Vuelve a entrar con tu usuario y tus dibujitos: tu reto queda guardado.`,busy:false};
   loginView();setTimeout(()=>{lostShown=false},1500)}
 function saveWardrobe(){if(ACCT&&DB)DB.saveWardrobe({owned:S.owned,eq:S.eq,spent:S.spent||0},ACCT.st.id).catch(e=>{if(e&&e.code==='numi/session-changed')sessionLost()})}
+// Cerrar sesión desde arriba (con confirmación, para que no se salga por un toque sin querer)
+function askLogout(){document.querySelector('.modal')?.remove();const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="sheet" role="dialog" aria-label="Cerrar sesión">${NM('think')}<h3>¿Quieres cerrar tu sesión${S.name?', '+esc(S.name):''}?</h3><p>Tu progreso queda guardado. Para volver, entras con tu usuario y tus dibujitos.</p>
+  <button class="big-btn alt" data-act="stayacc">Seguir jugando</button><button class="big-btn" data-act="logout">Sí, cerrar sesión</button></div>`;
+  document.body.appendChild(m);sound('tap')}
 async function logoutAcc(){if(watchOff){watchOff();watchOff=null}ACCT=null;try{await DB.logout()}catch(e){}TASKS=[];STORE='numi-v3';S={...S,name:'',saved:null};loginView()}
 /* ---------- historial: el botón atrás navega dentro de Numi ---------- */
 let curHash='',routing=false,pendingBack=null,retoPushed=false,GUARD=false,guardIgnore=[];
@@ -824,11 +832,11 @@ function askExit(){
 }
 
 function header(){
-  topEl.innerHTML=`<header class="top"><button class="logo" data-act="map">${NM()}<span>Numi</span></button>
+  topEl.innerHTML=`<header class="top${ACCT?' acct':''}"><button class="logo" data-act="map">${NM()}<span>Numi</span></button>
   <span class="tot" id="tot" aria-label="Estrellas"><b>★</b> ${S.stars}</span>
   <button class="ibtn" id="tourbtn" data-act="tourhelp" aria-label="Ver el tutorial" style="font-weight:700;font-size:22px">?</button>
   <button class="ibtn" data-act="closet" aria-label="Armario de Numi">${ICO('hanger')}</button>
-  <button class="ibtn" data-act="mute" aria-label="${S.mute?'Activar sonido':'Silenciar'}">${ICO(S.mute?'spkoff':'spk')}</button></header>`;
+  <button class="ibtn" data-act="mute" aria-label="${S.mute?'Activar sonido':'Silenciar'}">${ICO(S.mute?'spkoff':'spk')}</button>${ACCT?`<button class="out" data-act="asklogout" aria-label="Cerrar sesión de ${esc(S.name||'')}">Salir</button>`:''}</header>`;
 }
 function toast(m){document.querySelector('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 
@@ -996,7 +1004,10 @@ function makeRound(w,l,grade){
   for(let i=0;i<5;i++){let q,t=0;do{q=W[w].gen(g,bag[i]);t++}while((seen.has(q.ask)||(i&&out[i-1].ask===q.ask))&&t<12);seen.add(q.ask);out.push(q)}
   return out;
 }
-function start(w,l,g){g=g||S.grade;G={w,l:+l,g,m:S.mode,i:0,earned:[],outs:[],streak:0,qs:makeRound(w,+l,g)};nextQ()}
+// Avisa al panel que la niña está jugando (máximo una vez cada 10 minutos, para no gastar escrituras)
+let SEEN_T=0;
+function seenNow(id,force){if(!DB||!id)return;if(!force&&Date.now()-SEEN_T<10*60000)return;SEEN_T=Date.now();DB.markSeen(id)}
+function start(w,l,g){if(ACCT&&ACCT.st)seenNow(ACCT.st.id);g=g||S.grade;G={w,l:+l,g,m:S.mode,i:0,earned:[],outs:[],streak:0,qs:makeRound(w,+l,g)};nextQ()}
 function nextQ(){
   if(G.i>=5)return done();
   const g=G.l==0&&G.g>3?G.g-1:G.g;
@@ -1006,7 +1017,7 @@ function nextQ(){
 }
 const show=v=>G.q.kind=='frac'?frS(v):f(v);
 function play(){
-  setHash('reto');
+  setHash('reto');document.querySelector('.top .out')?.remove(); // en el reto se usa su propio "Salir"
   const w=W[G.w],q=G.q,wr=S.mode=='write';
   const hello=G.i==0&&S.name?`¡Vamos, ${esc(S.name)}! `:'';
   let body;
@@ -1094,7 +1105,9 @@ document.addEventListener('click',e=>{
   if(a==='login'){doLogin();return}
   if(a==='practice'){ACCT=null;STORE='numi-v3';try{Object.assign(S,JSON.parse(localStorage.getItem(STORE)||'{}'))}catch(e){}boot();return}
   if(a==='tologin'){G=null;loginView();return}
-  if(a==='logout'){logoutAcc();return}
+  if(a==='asklogout'){askLogout();return}
+  if(a==='stayacc'){document.querySelector('.modal')?.remove();return}
+  if(a==='logout'){document.querySelector('.modal')?.remove();logoutAcc();return}
   if(a==='task'){if(+b.dataset.due<Date.now()){TASKS=TASKS.filter(t=>t.due>=Date.now());toast('Esta tarea ya se cerró: pasó la fecha límite.');mapView();return}start(b.dataset.w,b.dataset.l);scrollTo(0,0);return}
   if(a==='map'){if(G&&!G.over)persist();G=null;mapView();scrollTo(0,0)}
   else if(a==='settings'){G=null;home();scrollTo(0,0)}

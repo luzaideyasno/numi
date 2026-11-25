@@ -231,7 +231,7 @@ async function loadCourse(c){
   c.scale={...DEF_SCALE,...(sc||{})};c.tasks=ts.sort((a,b)=>b.created-a.created);
   // Niñas con retos de antes del resumen: se calcula una sola vez y se guarda en su ficha
   const old=st.filter(x=>!x.st||!x.st.v);
-  if(old.length){const rs=await DB.results(c.id);old.forEach(x=>{x.st=DB.buildStats(rs.filter(r=>r.studentUid==x.id));DB.saveStats(x.id,x.st).catch(()=>{})})}
+  if(old.length){const rs=await DB.results(c.id);old.forEach(x=>{x.st={...DB.buildStats(rs.filter(r=>r.studentUid==x.id)),...(x.st&&x.st.seen?{seen:x.st.seen}:{})};DB.saveStats(x.id,x.st).catch(()=>{})})}
   c.students=st.map(x=>mkStu(x,c)).sort(byName);
   ns.forEach(n=>{D.notes[n.id]=n.obs||'';Object.entries(n.ov||{}).forEach(([i,v])=>{D.overrides[n.id+'|'+i]=v})});
 }
@@ -266,6 +266,10 @@ function counts(s){const c={p:0,s:0,m:0,a:0,t:0};Object.values(s.st.isl||{}).for
 const desemp=n=>n==null?['Sin nota','p-n']:n>=4.6?['Superior','p-ok']:n>=4?['Alto','p-ok']:n>=3.5?['Básico','p-warn']:['Bajo','p-bad'];
 const ago=t=>{if(!t)return'Nunca';const d=Math.floor((NOW-t)/DAY);return d<=0?'Hoy':d==1?'Ayer':d<7?`Hace ${d} días`:`Hace ${Math.floor(d/7)} sem.`};
 const last=s=>s.st.lastT||null;
+// Último ingreso: último reto terminado o última vez que entró o empezó un reto (st.seen)
+const ingreso=s=>Math.max(s.st.lastT||0,s.st.seen||0)||null;
+// Texto corto cuando no tiene retos terminados
+const sinRetos=s=>s.st.seen?'Apenas empezó':'Sin retos terminados';
 const fdate=t=>new Date(t).toLocaleDateString('es-CO',{day:'numeric',month:'short'});
 
 /* ---------- estado de la vista ---------- */
@@ -482,7 +486,7 @@ function resumen(){
   const byIsl=ISL.map((x,i)=>{const v=st.map(s=>islaNota(s,i).v).filter(v=>v!=null);return{...x,v:avg(v),cnt:v.length}});
   const bands=[['Superior','#13998b',n=>n>=4.6],['Alto','#7cc9a0',n=>n>=4&&n<4.6],['Básico','#f2b01e',n=>n>=3&&n<4],['Bajo','#e9456f',n=>n<3]].map(([l,c,fn])=>({l,c,n:notas.filter(fn).length}));
   const sin=st.length-notas.length;
-  const need=st.map(s=>{const n=finalNota(s),c=counts(s),r=[];if(n==null)r.push('No ha jugado');else{if(n<C().scale.alert)r.push('Nota '+f1(n));if(c.t&&c.a/c.t>.25)r.push(pct(c.a/c.t)+' con ayuda')}if(last(s)&&NOW-last(s)>7*DAY)r.push('Sin jugar hace más de una semana');return{s,r}}).filter(x=>x.r.length).slice(0,8);
+  const need=st.map(s=>{const n=finalNota(s),c=counts(s),r=[];if(n==null)r.push(sinRetos(s));else{if(n<C().scale.alert)r.push('Nota '+f1(n));if(c.t&&c.a/c.t>.25)r.push(pct(c.a/c.t)+' con ayuda')}if(last(s)&&NOW-last(s)>7*DAY)r.push('Sin jugar hace más de una semana');return{s,r}}).filter(x=>x.r.length).slice(0,8);
   const recent=st.flatMap(s=>s.retos.map(r=>({s,r}))).sort((a,b)=>b.r.t-a.r.t).slice(0,7);
   return `<div class="kpis"><div class="kpi c1"><b>${f1(prom)}</b><span>Nota promedio</span></div><div class="kpi c2"><b>${week.length} de ${st.length}</b><span>Jugaron esta semana</span></div>
   <div class="kpi c3"><b>${pct(all.p/all.t)}</b><span>Respuestas a la primera</span></div><div class="kpi c4"><b>${pct(all.a/all.t)}</b><span>Usaron la ayuda de Numi</span></div></div>
@@ -511,8 +515,8 @@ function dupWarn(){
       // Cada pareja se muestra una sola vez (desde la que tiene el número al final o la de nombre posterior)
       if(others.some(o=>o.cl==c&&(o.s.user.length<s.user.length||(o.s.user.length==s.user.length&&o.s.user<s.user))))return;
       rows.push(`<div class="alert"><div><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code> · ${info({s})}. También está: ${others.map(o=>`<button class="link" data-a="stux" data-c="${D.classes.indexOf(o.cl)}" data-id="${o.s.id}">${esc(o.s.name)}</button> (<code>${esc(o.s.user)}</code>, ${o.cl.name}, ${info(o)})`).join(' · ')}</small></div></div>`);
-    }else if(/\d$/.test(s.user)&&!nRetos(s)){
-      rows.push(`<div class="alert"><div><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code> y todavía no ha jugado. Termina en número porque ya existía una cuenta <code>${esc(base(s.user))}</code> (quizá de un listado anterior o de otro curso). Si ella entra con <b>${esc(base(s.user))}</b>, sus retos no aparecen aquí: dale la tarjeta con <b>${esc(s.user)}</b>.</small></div></div>`);
+    }else if(/\d$/.test(s.user)&&!nRetos(s)&&!s.st.seen){
+      rows.push(`<div class="alert"><div><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code> y no hay registro de que haya entrado con este usuario. Termina en número porque ya existía una cuenta <code>${esc(base(s.user))}</code> (quizá de un listado anterior o de otro curso). Si ella entra con <b>${esc(base(s.user))}</b>, sus retos no aparecen aquí: dale la tarjeta con <b>${esc(s.user)}</b>.</small></div></div>`);
     }
   });
   if(!rows.length)return '';
@@ -522,7 +526,7 @@ function estudiantes(){
   const k=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,''),q=k(V.q);
   let st=C().students.filter(s=>!q||k(s.name).includes(q)||k(s.user).includes(q));
   const dup=dupWarn();
-  const sorters={name:(a,b)=>a.name.localeCompare(b.name,'es'),nota:(a,b)=>(finalNota(a)??-1)-(finalNota(b)??-1),notaD:(a,b)=>(finalNota(b)??-1)-(finalNota(a)??-1),last:(a,b)=>(last(b)||0)-(last(a)||0)};
+  const sorters={name:(a,b)=>a.name.localeCompare(b.name,'es'),nota:(a,b)=>(finalNota(a)??-1)-(finalNota(b)??-1),notaD:(a,b)=>(finalNota(b)??-1)-(finalNota(a)??-1),last:(a,b)=>(ingreso(b)||0)-(ingreso(a)||0)};
   st=[...st].sort(sorters[V.sort]);
   return `<div class="tools"><input id="q" placeholder="Buscar por nombre o usuario" value="${esc(V.q)}" aria-label="Buscar estudiante por nombre o usuario"><select id="sort" aria-label="Ordenar">
   ${[['name','Orden alfabético'],['notaD','Nota: mayor a menor'],['nota','Nota: menor a mayor'],['last','Último ingreso']].map(([k,n])=>`<option value="${k}" ${V.sort==k?'selected':''}>${n}</option>`).join('')}</select></div>
@@ -530,7 +534,7 @@ function estudiantes(){
   ${dup}
   <div class="slist">${st.map(s=>{const c=counts(s),n=finalNota(s),d=desemp(n),l=last(s);
     const bar=c.t?`<span class="sc-bar" aria-label="${pct(c.p/c.t)} a la primera, ${pct((c.s+c.m)/c.t)} con error, ${pct(c.a/c.t)} con ayuda"><i style="width:${c.p/c.t*100}%;background:var(--teal)"></i><i style="width:${(c.s+c.m)/c.t*100}%;background:var(--gold)"></i><i style="width:${c.a/c.t*100}%;background:var(--coral)"></i></span>`:'';
-    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av sc-av">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code> · ${l?`${ago(l)} · ${nRetos(s)} ${nRetos(s)==1?'reto':'retos'}`:'Todavía no ha jugado'}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
+    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av sc-av">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code> · ${l?`${ago(l)} · ${nRetos(s)} ${nRetos(s)==1?'reto':'retos'}`:sinRetos(s)}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
   ${st.length?'<p class="muted" style="font-size:14px;margin-top:var(--s2)">Toca a una estudiante para ver sus notas. Con los tres puntitos <b>⋮</b> puedes cambiar su clave o eliminarla si se retiró.</p>':''}
   ${st.length?'':'<p class="muted" style="margin-top:var(--s3)">No hay estudiantes con ese nombre o usuario.</p>'}`;
 }
@@ -539,7 +543,7 @@ function estudiantes(){
 function student(){
   const s=C().students.find(x=>x.id==V.student),c=counts(s),n=finalNota(s),d=desemp(n);
   return `<button class="back" data-a="tabback">‹ ${C().name} · Estudiantes</button>
-  <div class="head"><div><h1>${esc(s.name)}</h1><p class="muted">Usuario: <b>${s.user}</b> · ${C().name} · Último ingreso: ${ago(last(s))}</p></div><span class="pill ${d[1]}" style="font-size:16px;padding:6px 14px">${d[0]} · ${f1(n)}</span></div>
+  <div class="head"><div><h1>${esc(s.name)}</h1><p class="muted">Usuario: <b>${s.user}</b> · ${C().name} · Último ingreso: ${ago(ingreso(s))}</p></div><span class="pill ${d[1]}" style="font-size:16px;padding:6px 14px">${d[0]} · ${f1(n)}</span></div>
   <div class="kpis"><div class="kpi c1"><b>${f1(n)}</b><span>Nota final</span></div><div class="kpi c2"><b>${c.t?pct(c.p/c.t):'—'}</b><span>A la primera</span></div>
   <div class="kpi c3"><b>${nRetos(s)}</b><span>Retos jugados</span></div><div class="kpi c4"><b>${c.t?pct(c.a/c.t):'—'}</b><span>Con ayuda de Numi</span></div></div>
   <div class="grid g2"><section class="card"><h3>Notas por isla</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Si lo necesitas, toca <b>Ajustar nota</b> para poner una nota a mano. La nota final se recalcula sola.</p>
@@ -553,7 +557,7 @@ function student(){
   <h3 style="margin-top:var(--s4)">Cómo respondió</h3><div class="legend" style="margin-top:var(--s2)">${['p','s','m','a'].map(k=>`<span class="q q-${k}">${QN[k]}: ${c[k]}</span>`).join('')}</div></section></div>
   <section class="card" style="margin-top:var(--s3)"><h3>Historial de retos</h3>${(()=>{const full=V.full&&V.full[s.id],list=full||s.retos,more=!full&&nRetos(s)>s.retos.length;
     return (list.length?`<p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">${full?`Los ${list.length} retos que ha jugado.`:`${more?'Los últimos '+list.length+' retos.':''}`}</p>`:'')+(list.length?list.map(r=>`<div class="reto"><div><b>${ISL[r.isl].n} · Nivel ${r.lvl+1}: ${LVN[r.lvl]}</b><br><small>${fdate(r.t)} · ${ago(r.t)}</small>
-  <div class="qs" style="margin-top:6px">${r.qs.map((q,k)=>`<span class="q q-${q}">P${k+1} · ${QN[q]} · ${f1(qv(q))}</span>`).join('')}</div></div><span class="nota" style="font-size:22px">${f1(retoNota(r))}</span></div>`).join(''):'<p class="muted">Todavía no ha jugado.</p>')+(more?`<button class="btn ghost" data-a="fullhist" data-id="${s.id}" style="margin-top:var(--s2)">Ver todo el historial (${nRetos(s)} retos)</button>`:'')})()}</section>
+  <div class="qs" style="margin-top:6px">${r.qs.map((q,k)=>`<span class="q q-${q}">P${k+1} · ${QN[q]} · ${f1(qv(q))}</span>`).join('')}</div></div><span class="nota" style="font-size:22px">${f1(retoNota(r))}</span></div>`).join(''):`<p class="muted">${s.st.seen?'Apenas empezó: todavía no ha terminado ningún reto.':'Todavía no ha terminado ningún reto.'}</p>`)+(more?`<button class="btn ghost" data-a="fullhist" data-id="${s.id}" style="margin-top:var(--s2)">Ver todo el historial (${nRetos(s)} retos)</button>`:'')})()}</section>
   ${C().closed?'':`<section class="card" style="margin-top:var(--s3);border:2px solid var(--coral)"><h3>¿Se retiró del colegio?</h3>
   <p class="muted" style="font-size:14px;margin:6px 0 var(--s2)">Elimina a ${esc(s.name.split(' ')[0])} del todo: ya no podrá entrar a Numi, sus retos y notas se borran y deja de contar en los promedios del salón. Si vuelve, la puedes agregar otra vez desde Usuarios y quedará con el mismo usuario.</p>
   <button class="btn" data-a="delst" data-id="${s.id}">Eliminar estudiante</button></section>`}`;
