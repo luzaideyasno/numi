@@ -130,6 +130,11 @@ tr.click{cursor:pointer}tr.click:hover td{background:light-dark(#fdf7fa,#2c2346)
 .thumb{width:120px;height:90px;object-fit:cover;border-radius:12px;border:2px solid var(--line)}
 .spin{width:28px;height:28px;border:4px solid var(--line);border-top-color:var(--coral);border-radius:50%;animation:sp 0.8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+.boot{min-height:100vh;min-height:100dvh;display:grid;place-content:center;justify-items:center;gap:20px;text-align:center;padding:24px}
+.boot-ring{position:relative;width:172px;height:172px;display:grid;place-items:center}
+.boot-ring::before{content:'';position:absolute;inset:0;border-radius:50%;border:5px solid var(--line);border-top-color:var(--coral);border-right-color:var(--gold);animation:sp 1s linear infinite}
+.boot-ring svg{width:104px;height:104px;margin-top:6px}
+.boot p{margin:0;font-weight:700;font-size:17px;color:var(--muted)}
 .olist{display:grid}.orow{display:flex;align-items:center;gap:var(--s2);padding:8px 0;border-top:1px solid var(--line)}.orow:first-child{border-top:0}
 .onum{width:26px;color:var(--muted);font-weight:800;text-align:right;flex:none}.ofld{flex:1;display:grid;gap:4px}.ofld input{padding:8px 12px}.ofld small{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.ofld .pic svg{width:20px;height:20px}
 .pic{display:inline-flex;gap:4px}.pic svg{width:26px;height:26px}
@@ -280,7 +285,7 @@ function render(){
   <div><label for="np2">Repite la contraseña</label><input id="np2" type="password" autocomplete="new-password" required></div>
   <button class="btn" type="submit" ${V.busy?'disabled':''}>${V.busy?'Guardando…':'Guardar y entrar'}</button>
   <p style="color:var(--coral);font-weight:700;min-height:1.5em" aria-live="polite">${esc(V.err||'')}</p></form></div>`;return}
-  if(V.screen=='boot'||V.screen=='loading'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div style="display:grid;place-items:center;gap:12px;text-align:center"><svg viewBox="0 0 120 120" style="width:120px"><use href="#numi"/></svg><div class="spin"></div><p class="muted">${V.screen=='boot'?'Conectando…':'Cargando cursos y notas…'}</p></div></div>`;return}
+  if(V.screen=='boot'||V.screen=='loading'){root.innerHTML=`<div class="boot" role="status"><div class="boot-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#numi"/></svg></div><p>${V.screen=='boot'?'Conectando…':'Cargando cursos y notas…'}</p></div>`;return}
   if(V.screen=='noaccess'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>Tu cuenta no tiene acceso al panel</h2><p class="muted" style="margin:8px 0 16px">Pide a la coordinación que te cree como profesor en Numi.</p><button class="btn" data-a="logout">Salir</button></div></div>`;return}
   if(V.screen=='nodb'){root.innerHTML=`<div class="login" style="grid-template-columns:1fr"><div class="card" style="max-width:460px;justify-self:center;align-self:center;margin:20px"><h2>No se pudo conectar con Numi</h2><p class="muted" style="margin-top:8px">Revisa tu conexión a internet y vuelve a abrir el panel.</p></div></div>`;return}
   let body='';
