@@ -1,0 +1,34 @@
+# Publica firestore.rules en Firebase (proyecto numi-b3d93) cada vez que cambia en main.
+# Necesita el secreto FIREBASE_SERVICE_ACCOUNT (clave privada de la cuenta de servicio, en JSON).
+name: Publicar reglas de Firestore
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - .github/workflows/publicar-reglas.yml
+      - .github/scripts/publicar-reglas.mjs
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-reglas
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar firebase-admin
+        run: npm install --no-save --no-package-lock firebase-admin@13
+
+      - name: Publicar reglas
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/publicar-reglas.mjs
