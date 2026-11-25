@@ -49,8 +49,9 @@ service cloud.firestore {
       allow get: if signedIn() && (request.auth.uid == uid || canCourse(resource.data.courseId));
       allow list: if canCourse(resource.data.courseId);
       allow create: if canCourse(request.resource.data.courseId);
+      // La niña solo puede cambiar su armario y su resumen de retos (st)
       allow update: if canCourse(resource.data.courseId)
-        || (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['wardrobe']));
+        || (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['wardrobe', 'st']));
       allow delete: if canCourse(resource.data.courseId);
     }
 

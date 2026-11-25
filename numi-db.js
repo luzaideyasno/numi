@@ -4,7 +4,7 @@ import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/13.
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
   sendPasswordResetEmail, updatePassword, deleteUser } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc,
-  updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+  updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 import { firebaseConfig, STUDENT_DOMAIN, RECAPTCHA_SITE_KEY, RECAPTCHA_ENTERPRISE } from "./firebase-config.js";
 
 // El panel y el juego usan sesiones separadas: así entrar como niña en una pestaña
@@ -22,6 +22,25 @@ const PICS = ['estrella', 'corazon', 'luna', 'sol', 'flor', 'nube'];
 const studentEmail = (user, year) => `${user}.${year}@${STUDENT_DOMAIN}`;
 const studentPass = (pics, year) => `numi-${pics.map(p => PICS.indexOf(p)).join('')}-${year}`;
 const list = s => s.docs.map(d => ({ id: d.id, ...d.data() }));
+// Resumen de cada niña (va dentro de su ficha en students/{uid}.st). Evita leer todos sus retos:
+// isl.iN = {p,s,m,a,n} respuestas por tipo y retos por isla · prog.gGiN = estrellas por nivel ·
+// done.iNlL = últimas 10 fechas en que terminó ese nivel (para tareas) · recent = últimos 20 retos · stars, learned, lastT
+const emptyStats = () => ({ v: 1, isl: {}, prog: {}, done: {}, recent: [], stars: 0, learned: 0, lastT: 0 });
+function buildStats(rs) {
+  const st = emptyStats();
+  [...rs].sort((a, b) => (a.t || 0) - (b.t || 0)).forEach(r => {
+    if (!r.qs || !r.qs.length) return;
+    const i = 'i' + r.isl, c = st.isl[i] || (st.isl[i] = { p: 0, s: 0, m: 0, a: 0, n: 0 });
+    r.qs.forEach(q => { c[q] = (c[q] || 0) + 1; }); c.n++;
+    const g = 'g' + r.grade + i, L = st.prog[g] || [0, 0, 0]; L[r.lvl] = Math.max(L[r.lvl] || 0, r.stars || 0); st.prog[g] = L;
+    (st.done[i + 'l' + r.lvl] = st.done[i + 'l' + r.lvl] || []).push(r.t || 0);
+    st.stars += r.stars || 0; st.learned += r.qs.filter(q => q == 'a').length; st.lastT = Math.max(st.lastT, r.t || 0);
+    st.recent.push({ isl: r.isl, lvl: r.lvl, qs: r.qs.join(''), t: r.t || 0 });
+  });
+  st.recent = st.recent.slice(-20).reverse();
+  for (const k in st.done) st.done[k] = st.done[k].slice(-10);
+  return st;
+}
 const byCourse = async (col, courseId) => list(await getDocs(query(collection(db, col), where('courseId', '==', courseId))));
 // Una app secundaria permite crear cuentas (profesores, niñas) sin cerrar la sesión de quien las crea.
 const secondary = () => initializeApp(firebaseConfig, 'sec-' + Date.now() + '-' + Math.random().toString(36).slice(2));
@@ -103,7 +122,12 @@ export const NumiDB = {
     await updateDoc(doc(db, 'users', u.uid), { mustChange: false });
   },
 
+  emptyStats, buildStats,
   students: courseId => byCourse('students', courseId),
+  // Historial completo de una niña: se lee solo al abrirlo
+  async studentResults(courseId, uid) { return list(await getDocs(query(collection(db, 'results'), where('courseId', '==', courseId), where('studentUid', '==', uid)))); },
+  // Guarda el resumen calculado (para niñas que tenían retos de antes del resumen)
+  saveStats: (uid, st) => updateDoc(doc(db, 'students', uid), { st }),
   results: courseId => byCourse('results', courseId),
   tasks: courseId => byCourse('tasks', courseId),
   notes: courseId => byCourse('notes', courseId),
@@ -115,7 +139,7 @@ export const NumiDB = {
         try { cred = await createUserWithEmailAndPassword(a, studentEmail(u, year), studentPass(pics, year)); break; }
         catch (e) { if (e.code === 'auth/email-already-in-use' && n < 40) { n++; u = user + n; continue; } throw e; }
       }
-      const data = { name, user: u, pics, courseId, year, created: Date.now() };
+      const data = { name, user: u, pics, courseId, year, created: Date.now(), st: emptyStats() };
       await setDoc(doc(db, 'students', cred.user.uid), data);
       return { id: cred.user.uid, ...data };
     } finally { await deleteApp(sec); }
@@ -215,10 +239,24 @@ export const NumiDB = {
   async myResults() { return list(await getDocs(query(collection(db, 'results'), where('studentUid', '==', auth.currentUser.uid)))); },
   // Guarda el reto SOLO si la sesión activa es de la niña que lo jugó (r.studentUid).
   // Si en este navegador entró otra cuenta mientras jugaba, no lo guarda a nombre de otra.
-  saveResult: r => {
+  saveResult: (r, extra) => {
     const u = auth.currentUser;
     if (!u || !r.studentUid || u.uid !== r.studentUid) return Promise.reject(Object.assign(new Error('La sesión cambió'), { code: 'numi/session-changed' }));
-    return addDoc(collection(db, 'results'), { t: Date.now(), ...r });
+    // En un solo envío: el reto (historial) + su resumen en la ficha de la niña
+    const res = { t: Date.now(), ...r }, i = 'i' + res.isl, qc = { p: 0, s: 0, m: 0, a: 0 };
+    (res.qs || []).forEach(q => { if (q in qc) qc[q]++; });
+    const up = { [`st.isl.${i}.n`]: increment(1), 'st.v': 1, 'st.stars': increment(res.stars || 0), 'st.learned': increment(qc.a), 'st.lastT': res.t, [`st.done.${i}l${res.lvl}`]: extra && extra.done ? extra.done : arrayUnion(res.t) };
+    for (const q in qc) if (qc[q]) up[`st.isl.${i}.${q}`] = increment(qc[q]);
+    if (extra && extra.prog) up[`st.prog.g${res.grade}${i}`] = extra.prog;
+    if (extra && extra.recent) up['st.recent'] = extra.recent;
+    const b = writeBatch(db);
+    b.set(doc(collection(db, 'results')), res);
+    b.update(doc(db, 'students', u.uid), up);
+    // Si las reglas nuevas aún no están publicadas, guarda al menos el reto (el resumen se rehace después)
+    return b.commit().then(() => ({ ok: true }), e => {
+      if (e && e.code === 'permission-denied') return addDoc(collection(db, 'results'), res).then(() => ({ partial: true }));
+      throw e;
+    });
   },
   saveWardrobe: (w, id) => {
     const u = auth.currentUser;

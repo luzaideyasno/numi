@@ -226,10 +226,13 @@ const clsAvg=c=>avg(c.students.map(finalNota).filter(x=>x!=null));
 const clsIsl=(c,i)=>avg(c.students.map(s=>islaNota(s,i).v).filter(v=>v!=null));
 const teachersOf=id=>V.role=='admin'?D.teachers.filter(t=>(t.access||[]).includes(id)).map(t=>t.name):(ME_P&&(ME_P.access||[]).includes(id)?[ME_P.name]:[]);
 async function loadCourse(c){
-  const [st,rs,ts,ns,sc]=await Promise.all([DB.students(c.id),DB.results(c.id),DB.tasks(c.id),DB.notes(c.id),DB.scale(c.id)]);
+  // Solo se leen las fichas (cada una trae el resumen de sus retos), no todos los retos del curso
+  const [st,ts,ns,sc]=await Promise.all([DB.students(c.id),DB.tasks(c.id),DB.notes(c.id),DB.scale(c.id)]);
   c.scale={...DEF_SCALE,...(sc||{})};c.tasks=ts.sort((a,b)=>b.created-a.created);
-  const by={};rs.forEach(r=>{if(r.qs&&r.qs.length)(by[r.studentUid]=by[r.studentUid]||[]).push({isl:r.isl,lvl:r.lvl,qs:r.qs,t:r.t,c})});
-  c.students=st.map(x=>({...x,retos:(by[x.id]||[]).sort((a,b)=>b.t-a.t)})).sort(byName);
+  // Niñas con retos de antes del resumen: se calcula una sola vez y se guarda en su ficha
+  const old=st.filter(x=>!x.st||!x.st.v);
+  if(old.length){const rs=await DB.results(c.id);old.forEach(x=>{x.st=DB.buildStats(rs.filter(r=>r.studentUid==x.id));DB.saveStats(x.id,x.st).catch(()=>{})})}
+  c.students=st.map(x=>mkStu(x,c)).sort(byName);
   ns.forEach(n=>{D.notes[n.id]=n.obs||'';Object.entries(n.ov||{}).forEach(([i,v])=>{D.overrides[n.id+'|'+i]=v})});
 }
 async function loadAll(){
@@ -250,12 +253,19 @@ const fail=e=>{console.error(e);toast(DB?DB.message(e):String(e))};
 const qv=q=>(C()?C().scale:DEF_SCALE)[q];
 const retoNota=r=>r.qs.reduce((a,q)=>a+(r.c.scale[q]??DEF_SCALE[q]),0)/r.qs.length;
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
-function islaNota(s,i){const o=D.overrides[s.id+'|'+i];if(o!=null)return{v:o,adj:true};const rs=s.retos.filter(r=>r.isl==i);return{v:rs.length?avg(rs.map(retoNota)):null,adj:false}}
+function mkStu(x,c){const st=x.st&&x.st.v?x.st:DB.emptyStats();const s={...x,st};Object.defineProperty(s,'c',{value:c,enumerable:false,writable:true});
+  s.retos=(st.recent||[]).map(r=>({isl:r.isl,lvl:r.lvl,qs:String(r.qs||'').split(''),t:r.t,c}));return s}
+// Nota de la isla calculada con el resumen: promedio de los valores de todas sus respuestas (igual al promedio de sus retos de 5 preguntas)
+function islaCalc(s,i){const k=s.st.isl['i'+i];if(!k||!k.n)return null;const sc=(s.c||C()||{}).scale||DEF_SCALE,t=(k.p||0)+(k.s||0)+(k.m||0)+(k.a||0);
+  return t?((k.p||0)*(sc.p??DEF_SCALE.p)+(k.s||0)*(sc.s??DEF_SCALE.s)+(k.m||0)*(sc.m??DEF_SCALE.m)+(k.a||0)*(sc.a??DEF_SCALE.a))/t:null}
+const islaN=(s,i)=>(s.st.isl['i'+i]||{}).n||0;
+const nRetos=s=>Object.values(s.st.isl||{}).reduce((a,k)=>a+(k.n||0),0);
+function islaNota(s,i){const o=D.overrides[s.id+'|'+i];if(o!=null)return{v:o,adj:true};return{v:islaCalc(s,i),adj:false}}
 function finalNota(s){const v=ISL.map((_,i)=>islaNota(s,i).v).filter(x=>x!=null);return avg(v)}
-function counts(s){const c={p:0,s:0,m:0,a:0,t:0};s.retos.forEach(r=>r.qs.forEach(q=>{c[q]++;c.t++}));return c}
+function counts(s){const c={p:0,s:0,m:0,a:0,t:0};Object.values(s.st.isl||{}).forEach(k=>['p','s','m','a'].forEach(q=>{c[q]+=k[q]||0;c.t+=k[q]||0}));return c}
 const desemp=n=>n==null?['Sin nota','p-n']:n>=4.6?['Superior','p-ok']:n>=4?['Alto','p-ok']:n>=3.5?['Básico','p-warn']:['Bajo','p-bad'];
 const ago=t=>{if(!t)return'Nunca';const d=Math.floor((NOW-t)/DAY);return d<=0?'Hoy':d==1?'Ayer':d<7?`Hace ${d} días`:`Hace ${Math.floor(d/7)} sem.`};
-const last=s=>s.retos[0]?.t;
+const last=s=>s.st.lastT||null;
 const fdate=t=>new Date(t).toLocaleDateString('es-CO',{day:'numeric',month:'short'});
 
 /* ---------- estado de la vista ---------- */
@@ -492,10 +502,10 @@ function estudiantes(){
   st=[...st].sort(sorters[V.sort]);
   return `<div class="tools"><input id="q" placeholder="Buscar estudiante" value="${esc(V.q)}" aria-label="Buscar estudiante"><select id="sort" aria-label="Ordenar">
   ${[['name','Orden alfabético'],['notaD','Nota: mayor a menor'],['nota','Nota: menor a mayor'],['last','Último ingreso']].map(([k,n])=>`<option value="${k}" ${V.sort==k?'selected':''}>${n}</option>`).join('')}</select></div>
-  ${st.some(x=>x.retos.length)?`<div class="legend-mini"><span><i style="background:var(--teal)"></i>A la primera</span><span><i style="background:var(--gold)"></i>Con error</span><span><i style="background:var(--coral)"></i>Con ayuda</span></div>`:''}
+  ${st.some(x=>nRetos(x))?`<div class="legend-mini"><span><i style="background:var(--teal)"></i>A la primera</span><span><i style="background:var(--gold)"></i>Con error</span><span><i style="background:var(--coral)"></i>Con ayuda</span></div>`:''}
   <div class="slist">${st.map(s=>{const c=counts(s),n=finalNota(s),d=desemp(n),l=last(s);
     const bar=c.t?`<span class="sc-bar" aria-label="${pct(c.p/c.t)} a la primera, ${pct((c.s+c.m)/c.t)} con error, ${pct(c.a/c.t)} con ayuda"><i style="width:${c.p/c.t*100}%;background:var(--teal)"></i><i style="width:${(c.s+c.m)/c.t*100}%;background:var(--gold)"></i><i style="width:${c.a/c.t*100}%;background:var(--coral)"></i></span>`:'';
-    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av sc-av">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>${l?`${ago(l)} · ${s.retos.length} ${s.retos.length==1?'reto':'retos'}`:'Todavía no ha jugado'}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
+    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av sc-av">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>${l?`${ago(l)} · ${nRetos(s)} ${nRetos(s)==1?'reto':'retos'}`:'Todavía no ha jugado'}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
   ${st.length?'<p class="muted" style="font-size:14px;margin-top:var(--s2)">Toca a una estudiante para ver sus notas. Con los tres puntitos <b>⋮</b> puedes cambiar su clave o eliminarla si se retiró.</p>':''}
   ${st.length?'':'<p class="muted" style="margin-top:var(--s3)">No hay estudiantes con ese nombre.</p>'}`;
 }
@@ -506,9 +516,9 @@ function student(){
   return `<button class="back" data-a="tabback">‹ ${C().name} · Estudiantes</button>
   <div class="head"><div><h1>${esc(s.name)}</h1><p class="muted">Usuario: <b>${s.user}</b> · ${C().name} · Último ingreso: ${ago(last(s))}</p></div><span class="pill ${d[1]}" style="font-size:16px;padding:6px 14px">${d[0]} · ${f1(n)}</span></div>
   <div class="kpis"><div class="kpi c1"><b>${f1(n)}</b><span>Nota final</span></div><div class="kpi c2"><b>${c.t?pct(c.p/c.t):'—'}</b><span>A la primera</span></div>
-  <div class="kpi c3"><b>${s.retos.length}</b><span>Retos jugados</span></div><div class="kpi c4"><b>${c.t?pct(c.a/c.t):'—'}</b><span>Con ayuda de Numi</span></div></div>
+  <div class="kpi c3"><b>${nRetos(s)}</b><span>Retos jugados</span></div><div class="kpi c4"><b>${c.t?pct(c.a/c.t):'—'}</b><span>Con ayuda de Numi</span></div></div>
   <div class="grid g2"><section class="card"><h3>Notas por isla</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Si lo necesitas, toca <b>Ajustar nota</b> para poner una nota a mano. La nota final se recalcula sola.</p>
-  <div class="isl-list">${ISL.map((x,i)=>{const rs=s.retos.filter(r=>r.isl==i),calc=rs.length?avg(rs.map(retoNota)):null,key=s.id+'|'+i,o=D.overrides[key];
+  <div class="isl-list">${ISL.map((x,i)=>{const rs={length:islaN(s,i)},calc=islaCalc(s,i),key=s.id+'|'+i,o=D.overrides[key];
     const right=V.ovEdit==key?`<span class="override"><input id="ovin" type="text" inputmode="decimal" maxlength="4" value="${o!=null?fx1(o):calc!=null?fx1(calc):''}" placeholder="4,5" aria-label="Nota a mano para ${x.n}"><button class="btn sm alt" data-a="ovsave" data-k="${key}">Guardar</button><button class="btn sm ghost" data-a="ovcancel">Cancelar</button></span>`
       :o!=null?`<span class="override"><b class="nota">${f1(o)}</b><span class="pill p-warn">Ajustada a mano</span>${C().closed?'':`<button class="link" data-a="ovreset" data-k="${key}" style="min-height:36px">Quitar ajuste</button>`}</span>`
       :`<span class="override"><b class="nota">${f1(calc)}</b>${C().closed?'':`<button class="btn sm ghost" data-a="ovedit" data-k="${key}">Ajustar nota</button>`}</span>`;
@@ -516,8 +526,9 @@ function student(){
   <section class="card"><h3>Observaciones del profesor</h3><textarea id="obs" data-id="${s.id}" placeholder="Ej.: se confunde al prestar en las restas. Reforzar con material concreto.">${esc(D.notes[s.id]||'')}</textarea>
   <p class="muted" style="font-size:14px;margin-top:6px">Se guarda solo. Solo la ven los profesores.</p>
   <h3 style="margin-top:var(--s4)">Cómo respondió</h3><div class="legend" style="margin-top:var(--s2)">${['p','s','m','a'].map(k=>`<span class="q q-${k}">${QN[k]}: ${c[k]}</span>`).join('')}</div></section></div>
-  <section class="card" style="margin-top:var(--s3)"><h3>Historial de retos</h3>${s.retos.length?s.retos.map(r=>`<div class="reto"><div><b>${ISL[r.isl].n} · Nivel ${r.lvl+1}: ${LVN[r.lvl]}</b><br><small>${fdate(r.t)} · ${ago(r.t)}</small>
-  <div class="qs" style="margin-top:6px">${r.qs.map((q,k)=>`<span class="q q-${q}">P${k+1} · ${QN[q]} · ${f1(qv(q))}</span>`).join('')}</div></div><span class="nota" style="font-size:22px">${f1(retoNota(r))}</span></div>`).join(''):'<p class="muted">Todavía no ha jugado.</p>'}</section>
+  <section class="card" style="margin-top:var(--s3)"><h3>Historial de retos</h3>${(()=>{const full=V.full&&V.full[s.id],list=full||s.retos,more=!full&&nRetos(s)>s.retos.length;
+    return (list.length?`<p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">${full?`Los ${list.length} retos que ha jugado.`:`${more?'Los últimos '+list.length+' retos.':''}`}</p>`:'')+(list.length?list.map(r=>`<div class="reto"><div><b>${ISL[r.isl].n} · Nivel ${r.lvl+1}: ${LVN[r.lvl]}</b><br><small>${fdate(r.t)} · ${ago(r.t)}</small>
+  <div class="qs" style="margin-top:6px">${r.qs.map((q,k)=>`<span class="q q-${q}">P${k+1} · ${QN[q]} · ${f1(qv(q))}</span>`).join('')}</div></div><span class="nota" style="font-size:22px">${f1(retoNota(r))}</span></div>`).join(''):'<p class="muted">Todavía no ha jugado.</p>')+(more?`<button class="btn ghost" data-a="fullhist" data-id="${s.id}" style="margin-top:var(--s2)">Ver todo el historial (${nRetos(s)} retos)</button>`:'')})()}</section>
   ${C().closed?'':`<section class="card" style="margin-top:var(--s3);border:2px solid var(--coral)"><h3>¿Se retiró del colegio?</h3>
   <p class="muted" style="font-size:14px;margin:6px 0 var(--s2)">Elimina a ${esc(s.name.split(' ')[0])} del todo: ya no podrá entrar a Numi, sus retos y notas se borran y deja de contar en los promedios del salón. Si vuelve, la puedes agregar otra vez desde Usuarios y quedará con el mismo usuario.</p>
   <button class="btn" data-a="delst" data-id="${s.id}">Eliminar estudiante</button></section>`}`;
@@ -555,7 +566,7 @@ function copyPlanilla(){
 function tareas(){
   const c=C();
   // Cuenta solo si la hizo entre que se asignó y la fecha límite (después se cierra)
-  const done=t=>c.students.filter(s=>s.retos.some(r=>r.isl==t.isl&&r.lvl==t.lvl&&r.t>=t.created&&r.t<=t.due));
+  const done=t=>c.students.filter(s=>(s.st.done['i'+t.isl+'l'+t.lvl]||[]).some(x=>x>=t.created&&x<=t.due));
   const due=new Date(NOW+3*DAY).toISOString().slice(0,10);
   return `<div class="grid g2"><section class="card"><h3>Asignar una tarea</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Las niñas verán la tarea en su mapa hasta la fecha límite. Ese día a la medianoche se cierra y ya no la pueden hacer.</p>
   <div class="fields"><div><label for="ti">Isla</label><select id="ti">${ISL.map((x,i)=>`<option value="${i}">${x.n}</option>`).join('')}</select></div>
@@ -704,7 +715,7 @@ function showHelp(){
 async function refreshData(silent){
   const cid=C()?.id,scr=V.screen,stu=V.student,y=scrollY;
   if(!silent){V.screen='loading';render()}
-  await loadAll();const i=D.classes.findIndex(c=>c.id==cid);if(i>=0)V.cls=i;
+  V.full=null;await loadAll();const i=D.classes.findIndex(c=>c.id==cid);if(i>=0)V.cls=i;
   V.screen=scr=='student'&&i>=0&&D.classes[i].students.some(x=>x.id==stu)?'student':scr=='salon'&&i>=0?'salon':'home';
   render();if(silent)scrollTo(0,y);else toast('Listo, ya ves los datos más recientes.');
 }
@@ -730,7 +741,7 @@ addEventListener('beforeunload',e=>{const p=Array.isArray(V.ocr)&&V.ocr.length>0
 /* ---------- eventos ---------- */
 let saveT={},BUSY=false;
 // Acciones que tardan: mientras trabajan, el botón queda bloqueado y no se repiten con doble toque
-const SLOW=new Set(['ocrsave','reset','wipe','delst','addtask','deltask','scsave','screset','ovsave','ovreset','refresh','logout','ntsave','etdone','etdel','ncsave','copyyear','ecsave','ecdel','xlsx','xlsxall','forgot']);
+const SLOW=new Set(['fullhist','ocrsave','reset','wipe','delst','addtask','deltask','scsave','screset','ovsave','ovreset','refresh','logout','ntsave','etdone','etdel','ncsave','copyyear','ecsave','ecdel','xlsx','xlsxall','forgot']);
 const later=(k,fn,ms=700)=>{clearTimeout(saveT[k]?.t);saveT[k]={fn,t:setTimeout(()=>{delete saveT[k];fn().catch(fail)},ms)}};
 function noteSave(sid){const c=C(),ov={};ISL.forEach((_,i)=>{const v=D.overrides[sid+'|'+i];if(v!=null)ov[i]=v});return DB.setNote(sid,c.id,{obs:D.notes[sid]||'',ov})}
 function cardsHTML(list){return list.map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${esc(s.user)}</code><span class="muted" style="font-size:13px">Clave: toca en orden</span><span class="pic">${s.pics.map(pic).join('')}</span><span class="muted" style="font-size:12px">${location.host}${location.pathname.replace('docente.html','')}</span></div>`).join('')}
@@ -779,7 +790,7 @@ function aiWhy(e){const m=String(e&&(e.message||e.code)||e||'');
     :'La IA respondió con un error.';
   return why+' Detalle: '+m.slice(0,240)}
 // Se puede borrar el listado completo solo si nadie ha entrado (sin retos ni armario) ni tiene notas u observaciones
-function canWipe(c){return c.students.every(s=>!s.retos.length&&!s.wardrobe&&!D.notes[s.id]&&!ISL.some((_,i)=>D.overrides[s.id+'|'+i]!=null))}
+function canWipe(c){return c.students.every(s=>!nRetos(s)&&!s.wardrobe&&!D.notes[s.id]&&!ISL.some((_,i)=>D.overrides[s.id+'|'+i]!=null))}
 async function runOCR(file){
   V.ocr='loading';V.aiErr='';render();
   // 1) Lectura con IA (Gemini en Firebase). Si no está activada, se usa el lector básico.
@@ -799,12 +810,21 @@ async function runOCR(file){
   }catch(e){V.ocr=null;render();toast('No se pudo leer la foto. Puedes escribir o pegar la lista.')}
 }
 async function saveStudents(){
-  const c=C(),rows=V.ocr.filter(r=>r.name.trim().split(' ').length>=1&&r.name.trim());
+  const c=C(),rows=V.ocr.filter(r=>r.name.trim());
   V.ocr={saving:true,done:0,total:rows.length};render();
-  const made=[];let errors=0;
-  for(const r of rows){try{const st=await DB.createStudent(c.id,c.year,{name:r.name.trim(),user:r.user,pics:r.pics});made.push({...st,retos:[]})}catch(e){errors++;console.error(e);if(e.code=='permission-denied'){fail(e);break}}V.ocr.done++;render()}
-  c.students.push(...made);c.students.sort(byName);V.ocr=null;render();
-  toast(errors?`Se crearon ${made.length} usuarios. ${errors} no se pudieron crear.`:`¡Listo! Se crearon ${made.length} usuarios. Ya puedes imprimir las tarjetas.`);
+  const made=[],left=[];let errors=0,limit=false;
+  for(let k=0;k<rows.length;k++){const r=rows[k];
+    if(limit){left.push(r);continue}
+    try{const st=await DB.createStudent(c.id,c.year,{name:r.name.trim(),user:r.user,pics:r.pics});made.push(mkStu(st,c))}
+    catch(e){console.error(e);
+      // Google permite crear máximo 100 cuentas por hora desde la misma red: se guardan las que faltan para crearlas después
+      if(e.code=='auth/too-many-requests'||e.code=='auth/quota-exceeded'){limit=true;left.push(r);continue}
+      if(e.code=='permission-denied'){fail(e);left.push(...rows.slice(k));break}
+      errors++;left.push(r)}
+    V.ocr.done++;render()}
+  c.students.push(...made);c.students.sort(byName);V.ocr=left.length?left:null;render();
+  if(limit)sheet(`<h3>Se crearon ${made.length} usuarios</h3><p class="muted" style="margin:8px 0 14px">Google no deja crear más de 100 cuentas por hora desde la misma red de internet. Las <b>${left.length}</b> que faltan quedaron guardadas en la lista: vuelve a tocar <b>Crear usuarios</b> en una hora, o desde otra red (por ejemplo, los datos del celular).</p><div class="tools" style="margin:0"><button class="btn alt" onclick="this.closest('.modal').remove()">Entendido</button></div>`);
+  else toast(errors?`Se crearon ${made.length} usuarios. ${errors} no se pudieron crear: siguen en la lista para intentarlo otra vez.`:`¡Listo! Se crearon ${made.length} usuarios. Ya puedes imprimir las tarjetas.`);
 }
 document.addEventListener('submit',async e=>{if(e.target.id!='npf')return;e.preventDefault();
   const p1=$('#np1').value,p2=$('#np2').value;
@@ -846,6 +866,8 @@ document.addEventListener('click',async e=>{
   else if(a=='atab'){V.atab=b.dataset.t;V.editT=null;EC=null;render()}
   else if(a=='copyall')copyAll();
   else if(a=='help')showHelp();
+  else if(a=='fullhist'){const s=C().students.find(x=>x.id==b.dataset.id);if(!s)return;b.textContent='Cargando…';
+    const rs=await DB.studentResults(C().id,s.id);V.full=V.full||{};V.full[s.id]=rs.filter(r=>r.qs&&r.qs.length).map(r=>({isl:r.isl,lvl:r.lvl,qs:r.qs,t:r.t,c:C()})).sort((x,y)=>y.t-x.t);render()}
   else if(a=='ovedit'){V.ovEdit=b.dataset.k;render();const i=$('#ovin');if(i){i.focus();i.select()}}
   else if(a=='ovcancel'){V.ovEdit=null;render()}
   else if(a=='ovsave'){const k=b.dataset.k,raw=$('#ovin').value.trim(),v=parseFloat(raw.replace(',','.'));if(!(v>=1&&v<=5)){toast('Escribe una nota entre 1,0 y 5,0.');$('#ovin').focus();return}
@@ -886,7 +908,7 @@ document.addEventListener('click',async e=>{
     m.addEventListener('click',e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(!k&&e.target!==m)return;m.remove();
       if(k=='ver'){V.student=s.id;V.screen='student';render();scrollTo(0,0)}else if(k=='print')printCards([s]);else if(k=='clave')fire('reset',s.id);else if(k=='del')fire('delst',s.id)})}
   else if(a=='delst'){const s=C().students.find(x=>x.id==b.dataset.id);if(!s)return;
-    if(!await ask({title:`¿Eliminar a ${esc(s.name)}?`,body:`<ul style="margin:0 0 10px 18px"><li>Ya no podrá entrar a Numi.</li><li>Se borran sus ${s.retos.length} retos, sus notas y observaciones.</li><li>Deja de contar en los promedios del salón.</li></ul><b>Esto no se puede deshacer.</b> Úsalo solo si la niña se retiró.`,ok:'Sí, eliminarla',cancel:'No, dejarla',danger:true}))return;
+    if(!await ask({title:`¿Eliminar a ${esc(s.name)}?`,body:`<ul style="margin:0 0 10px 18px"><li>Ya no podrá entrar a Numi.</li><li>Se borran sus ${nRetos(s)} retos, sus notas y observaciones.</li><li>Deja de contar en los promedios del salón.</li></ul><b>Esto no se puede deshacer.</b> Úsalo solo si la niña se retiró.`,ok:'Sí, eliminarla',cancel:'No, dejarla',danger:true}))return;
     b.disabled=true;b.textContent='Eliminando…';clearTimeout(saveT['obs'+s.id]?.t);delete saveT['obs'+s.id];
     const r=await DB.removeStudent(s);
     C().students=C().students.filter(x=>x.id!=s.id);delete D.notes[s.id];ISL.forEach((_,i)=>delete D.overrides[s.id+'|'+i]);

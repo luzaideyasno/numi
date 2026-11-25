@@ -713,6 +713,16 @@ async function doLogin(){
     sound('oops');loginView();
   }
 }
+function applyStats(stt){S.prog={};S.crowns={};S.recent=(stt.recent||[]).slice(0,20);S.done=stt.done||{};
+  Object.entries(stt.prog||{}).forEach(([k,L])=>{const m=k.match(/^g(\d+)i(\d+)$/);if(m)S.prog[m[1]+'-'+ORDER[+m[2]]]=[...L]});
+  let earned=stt.stars||0;Object.keys(S.prog).forEach(k=>{if(S.prog[k].every(x=>x>0)){S.crowns[k]=true;earned+=10}});
+  S.earnedAll=earned;S.stars=earned-(S.spent||0);S.learned=stt.learned||0}
+const doneIn=t=>((S.done||{})['i'+t.isl+'l'+t.lvl]||[]).some(x=>x>=t.created&&x<=t.due);
+// Anota el reto en el resumen local y devuelve lo que se guarda en la ficha (estrellas del nivel y últimos retos)
+function noteResult(r){const k=r.grade+'-'+ORDER[r.isl],L=[...(S.prog[k]||[0,0,0])];L[r.lvl]=Math.max(L[r.lvl]||0,r.stars||0);
+  S.recent=[{isl:r.isl,lvl:r.lvl,qs:(r.qs||[]).join(''),t:r.t},...(S.recent||[])].slice(0,20);
+  S.done=S.done||{};const dk='i'+r.isl+'l'+r.lvl;S.done[dk]=[...(S.done[dk]||[]),r.t].slice(-10);
+  TASKS=TASKS.filter(t=>!(t.isl==r.isl&&t.lvl==r.lvl));return{prog:L,recent:S.recent,done:S.done[dk]}}
 async function enterAccount(st){
   loadingView('Preparando tu reino…');
   STORE='numi-v3-'+st.id;
@@ -721,14 +731,14 @@ async function enterAccount(st){
   const w=st.wardrobe||{};
   S={...S,...base,name:first(st.name),grade:st.course?.grade||3,started:true,testAll:false,prog:{},crowns:{},
      owned:w.owned||[],eq:w.eq||{mane:'arco',body:'blanco'},spent:w.spent||0};
-  try{await sendPending(st)}catch(e){}
-  let rs=[];try{rs=await DB.myResults()}catch(e){toast('No se pudo cargar tu progreso. Revisa el internet.')}
-  let earned=0,learned=0;
-  rs.forEach(r=>{const k=r.grade+'-'+ORDER[r.isl],L=S.prog[k]||[0,0,0];L[r.lvl]=Math.max(L[r.lvl]||0,r.stars||0);S.prog[k]=L;earned+=r.stars||0;learned+=(r.qs||[]).filter(q=>q=='a').length});
-  Object.keys(S.prog).forEach(k=>{if(S.prog[k].every(x=>x>0)){S.crowns[k]=true;earned+=10}});
-  S.earnedAll=earned;S.stars=earned-S.spent;S.learned=learned;
+  // Resumen de la niña (1 sola lectura). Si tenía retos de antes del resumen, se calcula una vez y se guarda.
+  let stt=st.st;
+  let redo=false;try{redo=localStorage.getItem('numi-rehacer-'+st.id)=='1'}catch(e){}
+  if(!stt||!stt.v||redo){let rs=[];try{rs=await DB.myResults()}catch(e){toast('No se pudo cargar tu progreso. Revisa el internet.')}stt=DB.buildStats(rs);DB.saveStats(st.id,stt).then(()=>{try{localStorage.removeItem('numi-rehacer-'+st.id)}catch(e){}}).catch(()=>{})}
+  applyStats(stt);
   ACCT={st};watchSession();
-  try{const ts=await DB.myTasks(st.courseId);TASKS=ts.filter(t=>t.due>=Date.now()&&!rs.some(r=>r.isl==t.isl&&r.lvl==t.lvl&&r.t>=t.created)).sort((a,b)=>a.due-b.due)}catch(e){TASKS=[]}
+  try{await sendPending(st)}catch(e){}
+  try{const ts=await DB.myTasks(st.courseId);TASKS=ts.filter(t=>t.due>=Date.now()&&!doneIn(t)).sort((a,b)=>a.due-b.due)}catch(e){TASKS=[]}
   save();boot();
 }
 /* ---------- la sesión de la niña ---------- */
@@ -736,7 +746,7 @@ async function enterAccount(st){
 const pendKey=id=>'numi-pendientes-'+id;
 function keepPending(r){try{const k=pendKey(r.studentUid),a=JSON.parse(localStorage.getItem(k)||'[]');a.push(r);localStorage.setItem(k,JSON.stringify(a))}catch(e){}}
 async function sendPending(st){let a=[];try{a=JSON.parse(localStorage.getItem(pendKey(st.id))||'[]')}catch(e){}if(!a.length)return [];
-  const ok=[],left=[];for(const r of a){try{await DB.saveResult({...r,studentUid:st.id});ok.push(r)}catch(e){left.push(r)}}
+  const ok=[],left=[];for(const r of a){try{const k=r.grade+'-'+ORDER[r.isl],had=(S.prog[k]||[])[r.lvl]||0,x=noteResult(r);S.prog[k]=x.prog;await DB.saveResult({...r,studentUid:st.id},x);S.earnedAll+=r.stars||0;S.stars+=r.stars||0;S.learned+=(r.qs||[]).filter(q=>q=='a').length;ok.push(r)}catch(e){left.push(r)}}
   try{left.length?localStorage.setItem(pendKey(st.id),JSON.stringify(left)):localStorage.removeItem(pendKey(st.id))}catch(e){}
   if(ok.length)toast(ok.length==1?'¡Listo! Guardamos el reto que tenías pendiente.':`¡Listo! Guardamos ${ok.length} retos que tenías pendientes.`);return ok}
 let watchOff=null,lostShown=false;
@@ -1041,7 +1051,7 @@ function done(){
   if(affordNew())prizes.push(`<svg viewBox="0 0 24 24" style="width:40px;height:40px"><use href="#hanger"/></svg><span>¡Ya te alcanza para algo nuevo en el armario de Numi!</span>`);
   if(ACCT&&DB&&same&&!G.preview){
     const res={studentUid:ACCT.st.id,courseId:ACCT.st.courseId,year:ACCT.st.year,grade:G.g,isl:ORDER.indexOf(G.w),lvl:G.l,qs:G.outs||[],stars:tot,t:Date.now()};
-    DB.saveResult(res).catch(e=>{if(e&&e.code==='numi/session-changed'){keepPending(res);sessionLost()}else toast('Sin internet: tu resultado se guardará cuando vuelva la conexión.')});
+    DB.saveResult(res,noteResult(res)).then(x=>{if(x&&x.partial)try{localStorage.setItem('numi-rehacer-'+res.studentUid,'1')}catch(e){}}).catch(e=>{if(e&&e.code==='numi/session-changed'){keepPending(res);sessionLost()}else toast('Sin internet: tu resultado se guardará cuando vuelva la conexión.')});
     TASKS=TASKS.filter(t=>!(t.isl==ORDER.indexOf(G.w)&&t.lvl==G.l));
   }
   save();header();setHash('fin');
