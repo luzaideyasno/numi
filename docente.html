@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Numi — panel docente</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#fff8ee">
 <script type="module" src="numi-db.js" onerror="window.NUMIDB_FAIL=1;dispatchEvent(new Event('numidbfail'))"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -266,6 +271,8 @@ function counts(s){const c={p:0,s:0,m:0,a:0,t:0};Object.values(s.st.isl||{}).for
 const desemp=n=>n==null?['Sin nota','p-n']:n>=4.6?['Superior','p-ok']:n>=4?['Alto','p-ok']:n>=3.5?['Básico','p-warn']:['Bajo','p-bad'];
 const ago=t=>{if(!t)return'Nunca';const d=Math.floor((NOW-t)/DAY);return d<=0?'Hoy':d==1?'Ayer':d<7?`Hace ${d} días`:`Hace ${Math.floor(d/7)} sem.`};
 const last=s=>s.st.lastT||null;
+// Fecha local en formato AAAA-MM-DD (para los campos de fecha)
+const isoDay=t=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 // Último ingreso: último reto terminado o última vez que entró o empezó un reto (st.seen)
 const ingreso=s=>Math.max(s.st.lastT||0,s.st.seen||0)||null;
 // Texto corto cuando no tiene retos terminados
@@ -606,7 +613,8 @@ function tareas(){
     return `<div class="task"><div class="top"><b>${ISL[t.isl].n} · Nivel ${t.lvl+1}: ${LVN[t.lvl]}</b><span class="pill ${late?'p-n':'p-warn'}">${late?'Cerrada el':'Vence'} ${fdate(t.due)}</span></div>
     <div class="hrow" style="grid-template-columns:minmax(0,1fr) auto"><span class="track"><i style="width:${c.students.length?d.length/c.students.length*100:0}%"></i></span><em>${d.length} de ${c.students.length}${late?' a tiempo':''}</em></div>
     ${miss.length?`<details><summary>${late?'Ver quién no la hizo':'Ver quién falta'} (${miss.length})</summary><p class="muted" style="margin-top:6px">${miss.map(s=>esc(s.name)).join(', ')}</p></details>`:'<span class="pill p-ok">¡Todas la hicieron!</span>'}${late?'<small class="muted" style="font-size:13px">Ya se cerró: las niñas no la ven en su mapa.</small>':''}
-    <button class="link" data-a="deltask" data-k="${k}" style="justify-self:start;font-size:14px">Quitar tarea</button></div>`}).join(''):'<p class="muted">No hay tareas asignadas.</p>'}</section></div>`;
+    ${V.etask==t.id?`<div class="fields" style="align-items:end"><div><label for="ted">Nueva fecha límite</label><input id="ted" type="date" value="${isoDay(Math.max(t.due,NOW))}" min="${isoDay(NOW)}"></div><div style="display:flex;gap:var(--s2)"><button class="btn" data-a="savedue" data-k="${k}">Guardar fecha</button><button class="btn ghost" data-a="canceldue">Cancelar</button></div></div><small class="muted" style="font-size:13px">${late?'La tarea se vuelve a abrir: las niñas que faltan la verán otra vez en su mapa.':'Las niñas que faltan tendrán más días para hacerla.'} Las que ya la hicieron siguen contando.</small>`
+    :`<div style="display:flex;gap:var(--s3);flex-wrap:wrap"><button class="link" data-a="editdue" data-id="${t.id}" style="font-size:14px">${late?'Volver a abrir (nueva fecha)':'Cambiar fecha límite'}</button><button class="link" data-a="deltask" data-k="${k}" style="font-size:14px">Quitar tarea</button></div>`}</div>`}).join(''):'<p class="muted">No hay tareas asignadas.</p>'}</section></div>`;
 }
 
 /* usuarios */
@@ -908,6 +916,11 @@ document.addEventListener('click',async e=>{
   else if(a=='xlsxall'){await downloadExcel(consolidadoRows(),`consolidado-notas-${D.year}`,'Consolidado '+D.year)}
   else if(a=='addtask'){if(!$('#td').value){toast('Elige la fecha límite.');return}const d={courseId:C().id,isl:+$('#ti').value,lvl:+$('#tl').value,due:new Date($('#td').value+'T23:59:59').getTime(),created:Date.now()};
     if(d.due<Date.now()){toast('Esa fecha ya pasó. Elige hoy o un día después.');return}const id=await DB.createTask(d);C().tasks.unshift({id,...d});render();toast('Tarea asignada. Las niñas la verán en su mapa.')}
+  else if(a=='editdue'){V.etask=b.dataset.id;render();setTimeout(()=>$('#ted')?.focus(),50)}
+  else if(a=='canceldue'){V.etask=null;render()}
+  else if(a=='savedue'){const t=C().tasks[+b.dataset.k],v=$('#ted').value;if(!v){toast('Elige la nueva fecha límite.');return}
+    const due=new Date(v+'T23:59:59').getTime();if(due<Date.now()){toast('Esa fecha ya pasó. Elige hoy o un día después.');return}
+    b.disabled=true;try{await DB.updateTask(t.id,{due});t.due=due;V.etask=null;render();toast(`Listo: la tarea ahora vence el ${fdate(due)}.`)}catch(e){b.disabled=false;fail(e)}}
   else if(a=='deltask'){const t=C().tasks[+b.dataset.k];await DB.deleteTask(t.id);C().tasks.splice(+b.dataset.k,1);render()}
   else if(a=='phcam'||a=='phgal'){picker(a=='phcam').click()}
   else if(a=='paste'){V.ocr='paste';render()}
