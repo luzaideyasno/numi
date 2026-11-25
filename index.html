@@ -46,7 +46,8 @@ h2{font-size:clamp(26px,6vw,34px);line-height:1.1;margin:0;text-wrap:balance}
 .ibtn{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;border:3px solid var(--line);background:var(--card)}
 .ibtn svg{width:24px;height:24px}
 .out{height:48px;padding:0 14px;border-radius:99px;border:3px solid var(--line);background:var(--card);color:var(--coral);font-weight:700;font-size:17px;white-space:nowrap}
-@media(max-width:430px){.top.acct .logo span{display:none}.top.acct{gap:6px}.top.acct .ibtn{width:44px;height:44px}}
+.top .logo{flex-shrink:0}
+@media(max-width:430px){.top.acct .logo>span:not(.nm){display:none}.top.acct{gap:5px}.top.acct .logo .nm{width:40px}.top.acct .ibtn{width:42px;height:42px}.top.acct .tot{padding:4px 10px;font-size:17px}.top.acct .out{height:42px;padding:0 10px;font-size:16px}}
 /* portada */
 .hero{background:var(--sun);padding:var(--s5) 0 var(--s6)}
 .hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:center;gap:var(--s4)}
