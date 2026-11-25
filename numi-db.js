@@ -213,6 +213,7 @@ export const NumiDB = {
     return out;
   },
   createTask: d => addDoc(collection(db, 'tasks'), d).then(r => r.id),
+  updateTask: (id, d) => updateDoc(doc(db, 'tasks', id), d),
   deleteTask: id => deleteDoc(doc(db, 'tasks', id)),
   async scale(courseId) { const s = await getDoc(doc(db, 'settings', courseId)); return s.exists() ? s.data() : null; },
   setScale: (courseId, sc) => setDoc(doc(db, 'settings', courseId), sc),
