@@ -554,17 +554,18 @@ function copyPlanilla(){
 /* tareas */
 function tareas(){
   const c=C();
-  const done=t=>c.students.filter(s=>s.retos.some(r=>r.isl==t.isl&&r.lvl==t.lvl&&r.t>=t.created));
+  // Cuenta solo si la hizo entre que se asignó y la fecha límite (después se cierra)
+  const done=t=>c.students.filter(s=>s.retos.some(r=>r.isl==t.isl&&r.lvl==t.lvl&&r.t>=t.created&&r.t<=t.due));
   const due=new Date(NOW+3*DAY).toISOString().slice(0,10);
-  return `<div class="grid g2"><section class="card"><h3>Asignar una tarea</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Las niñas verán la tarea en su mapa con la fecha límite.</p>
+  return `<div class="grid g2"><section class="card"><h3>Asignar una tarea</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Las niñas verán la tarea en su mapa hasta la fecha límite. Ese día a la medianoche se cierra y ya no la pueden hacer.</p>
   <div class="fields"><div><label for="ti">Isla</label><select id="ti">${ISL.map((x,i)=>`<option value="${i}">${x.n}</option>`).join('')}</select></div>
   <div><label for="tl">Nivel</label><select id="tl">${LVN.map((x,i)=>`<option value="${i}">${i+1}. ${x}</option>`).join('')}</select></div>
-  <div><label for="td">Fecha límite</label><input id="td" type="date" value="${due}"></div></div>
+  <div><label for="td">Fecha límite</label><input id="td" type="date" value="${due}" min="${new Date(NOW-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10)}"></div></div>
   <button class="btn" data-a="addtask" style="margin-top:var(--s3)">Asignar a ${c.name}</button></section>
   <section class="card"><h3>Tareas asignadas</h3>${c.tasks.length?c.tasks.map((t,k)=>{const d=done(t),miss=c.students.filter(s=>!d.includes(s)),late=t.due<NOW;
-    return `<div class="task"><div class="top"><b>${ISL[t.isl].n} · Nivel ${t.lvl+1}: ${LVN[t.lvl]}</b><span class="pill ${late?'p-bad':'p-warn'}">${late?'Venció':'Vence'} ${fdate(t.due)}</span></div>
-    <div class="hrow" style="grid-template-columns:minmax(0,1fr) auto"><span class="track"><i style="width:${c.students.length?d.length/c.students.length*100:0}%"></i></span><em>${d.length} de ${c.students.length}</em></div>
-    ${miss.length?`<details><summary>Ver quién falta (${miss.length})</summary><p class="muted" style="margin-top:6px">${miss.map(s=>esc(s.name)).join(', ')}</p></details>`:'<span class="pill p-ok">¡Todas la hicieron!</span>'}
+    return `<div class="task"><div class="top"><b>${ISL[t.isl].n} · Nivel ${t.lvl+1}: ${LVN[t.lvl]}</b><span class="pill ${late?'p-n':'p-warn'}">${late?'Cerrada el':'Vence'} ${fdate(t.due)}</span></div>
+    <div class="hrow" style="grid-template-columns:minmax(0,1fr) auto"><span class="track"><i style="width:${c.students.length?d.length/c.students.length*100:0}%"></i></span><em>${d.length} de ${c.students.length}${late?' a tiempo':''}</em></div>
+    ${miss.length?`<details><summary>${late?'Ver quién no la hizo':'Ver quién falta'} (${miss.length})</summary><p class="muted" style="margin-top:6px">${miss.map(s=>esc(s.name)).join(', ')}</p></details>`:'<span class="pill p-ok">¡Todas la hicieron!</span>'}${late?'<small class="muted" style="font-size:13px">Ya se cerró: las niñas no la ven en su mapa.</small>':''}
     <button class="link" data-a="deltask" data-k="${k}" style="justify-self:start;font-size:14px">Quitar tarea</button></div>`}).join(''):'<p class="muted">No hay tareas asignadas.</p>'}</section></div>`;
 }
 
@@ -628,7 +629,7 @@ const ST={
   isla:{tab:'tareas',sel:'#ti',t:'Dejar una tarea · 1. La isla',d:'Ya estás en <b>Tareas</b>. Toca aquí y elige la isla, por ejemplo <b>Sumas</b>.'},
   nivel:{tab:'tareas',sel:'#tl',t:'2. El nivel',d:'Elige qué tan difícil: <b>1 Calentando</b>, <b>2 En marcha</b> o <b>3 Desafío</b>.'},
   fecha:{tab:'tareas',sel:'#td',t:'3. La fecha límite',d:'Toca aquí y elige hasta qué día tienen para hacerla.'},
-  asignar:{tab:'tareas',sel:'[data-a=addtask]',t:'4. Toca Asignar',d:'¡Listo! Las niñas verán la tarea en su mapa del juego, y aquí abajo verás cuáles ya la hicieron.'},
+  asignar:{tab:'tareas',sel:'[data-a=addtask]',t:'4. Toca Asignar',d:'¡Listo! Las niñas verán la tarea en su mapa del juego hasta la fecha límite, y aquí abajo verás cuáles ya la hicieron.'},
   wipe:{tab:'usuarios',sel:'[data-a=wipe]',t:'Borrar el listado equivocado',d:'Toca aquí y confirma. Después vuelve a tomar la foto de la lista correcta.',alt:'Esta opción solo aparece si ninguna niña ha jugado todavía. Si ya jugaron, elimínalas una por una con los tres puntitos ⋮ en <b>Estudiantes</b>.'},
   escala:{tab:'config',sel:'.scale',t:'La escala de notas',d:'Ya estás en <b>Configuración</b>. Solo si quieres cambiar cuánto vale cada respuesta: escribe el valor nuevo y toca <b>Guardar escala</b>.'},
   ayuda:{tab:'resumen',sel:'.help',t:'¿Se te olvida algo?',d:'Toca <b>Ayuda</b> cuando quieras. En cada pregunta está el botón <b>Muéstrame cómo</b>: te lleva y te señala dónde tocar, como ahora.'}};
@@ -853,7 +854,8 @@ document.addEventListener('click',async e=>{
   else if(a=='copy')copyPlanilla();
   else if(a=='xlsx'){await downloadExcel(planillaRows(),`notas-${C().name.replace(/[^0-9A-Za-z]/g,"")}-${C().year}`,'Notas '+C().name)}
   else if(a=='xlsxall'){await downloadExcel(consolidadoRows(),`consolidado-notas-${D.year}`,'Consolidado '+D.year)}
-  else if(a=='addtask'){const d={courseId:C().id,isl:+$('#ti').value,lvl:+$('#tl').value,due:new Date($('#td').value+'T23:59').getTime(),created:Date.now()};const id=await DB.createTask(d);C().tasks.unshift({id,...d});render();toast('Tarea asignada. Las niñas la verán en su mapa.')}
+  else if(a=='addtask'){if(!$('#td').value){toast('Elige la fecha límite.');return}const d={courseId:C().id,isl:+$('#ti').value,lvl:+$('#tl').value,due:new Date($('#td').value+'T23:59:59').getTime(),created:Date.now()};
+    if(d.due<Date.now()){toast('Esa fecha ya pasó. Elige hoy o un día después.');return}const id=await DB.createTask(d);C().tasks.unshift({id,...d});render();toast('Tarea asignada. Las niñas la verán en su mapa.')}
   else if(a=='deltask'){const t=C().tasks[+b.dataset.k];await DB.deleteTask(t.id);C().tasks.splice(+b.dataset.k,1);render()}
   else if(a=='phcam'||a=='phgal'){picker(a=='phcam').click()}
   else if(a=='paste'){V.ocr='paste';render()}

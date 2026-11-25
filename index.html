@@ -135,7 +135,12 @@ input{width:100%;font:inherit;font-size:20px;padding:14px 18px;border-radius:18p
 .picgrid button{min-height:72px;border-radius:18px;border:3px solid var(--line);background:var(--card);display:grid;place-items:center;box-shadow:0 4px 0 var(--line)}
 .picgrid button:active{transform:translateY(3px);box-shadow:none}
 .lerr{color:var(--coral);font-weight:700;text-align:center;margin-top:var(--s2);min-height:1.5em}
-.loading{min-height:70vh;display:grid;place-items:center;text-align:center;gap:var(--s2)}
+.boot{min-height:88vh;min-height:88dvh;display:grid;place-content:center;justify-items:center;gap:20px;text-align:center;padding:24px}
+.boot-ring{position:relative;width:184px;height:184px;display:grid;place-items:center}
+.boot-ring::before{content:'';position:absolute;inset:0;border-radius:50%;border:6px solid var(--line);border-top-color:var(--coral);border-right-color:var(--gold);animation:bootspin 1s linear infinite}
+.boot-numi{width:118px;margin-top:6px}.boot-numi svg{width:100%;height:auto;display:block}
+.boot p{margin:0;font-weight:600;font-size:20px}
+@keyframes bootspin{to{transform:rotate(360deg)}}
 .task{display:flex;align-items:center;gap:var(--s2);background:var(--card);border:3px solid var(--gold);border-radius:22px;padding:var(--s2) var(--s3);margin-bottom:var(--s3)}
 .task div{flex:1}.task b{display:block;font-size:18px}.task small{color:var(--muted);font-size:15px}
 .task .next{padding:0 18px;min-height:50px;font-size:18px}
@@ -602,7 +607,7 @@ function mapView(noHash){
   <p class="learned">Cosas que aprendiste con Numi: <b>${S.learned}</b></p></div>
   ${S.testAll?'<div class="wrap"><p class="note" style="margin:0 0 var(--s3)"><b>Modo prueba activo:</b> todas las islas están abiertas. <button class="link" data-act="adult">Desactivar</button></p></div>':''}
   ${savedFor()?`<div class="wrap"><div class="resume" style="--c:${W[S.saved.w].col}"><span class="blob">${W[S.saved.w].sym}</span><div><b>Tienes un reto a medias</b><small>${W[S.saved.w].name} · Nivel ${S.saved.l+1} · pregunta ${Math.min(5,S.saved.i+(S.saved.solved?2:1))} de 5</small></div><button class="next" data-act="resume">Continuar</button></div></div>`:''}
-  ${ACCT&&TASKS.length?`<div class="wrap">${TASKS.slice(0,3).map(t=>{const w=ORDER[t.isl];return `<div class="task"><span class="blob" style="--c:${W[w].col};width:54px;height:48px;font-size:24px;border-width:4px;flex:none">${W[w].sym}</span><div><b>Tarea de tu profe</b><small>${W[w].name} · Nivel ${t.lvl+1} · para el ${new Date(t.due).toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</small></div><button class="next" data-act="task" data-w="${w}" data-l="${t.lvl}">Hacer</button></div>`}).join('')}</div>`:''}
+  ${ACCT&&TASKS.length?`<div class="wrap">${TASKS.slice(0,3).map(t=>{const w=ORDER[t.isl];return `<div class="task"><span class="blob" style="--c:${W[w].col};width:54px;height:48px;font-size:24px;border-width:4px;flex:none">${W[w].sym}</span><div><b>Tarea de tu profe</b><small>${W[w].name} · Nivel ${t.lvl+1} · para el ${new Date(t.due).toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</small></div><button class="next" data-act="task" data-w="${w}" data-l="${t.lvl}" data-due="${t.due}">Hacer</button></div>`}).join('')}</div>`:''}
   <div class="map" id="map" style="height:${H}px">${seaDeco(H)}<svg class="path" viewBox="0 0 100 ${H}" preserveAspectRatio="none"><path d="${d}"/></svg>
   <span class="dec cloud" style="left:62%;top:0">${CLOUD}</span><span class="dec boat" style="left:84%;top:${top+gap*1.55}px">${BOAT}</span>
   <span class="dec fish" style="left:14%;top:${top+gap*2.5}px">${FISH('#ff8a5b')}</span><span class="dec fish f2" style="left:86%;top:${top+gap*3.6}px">${FISH('#a45fd1')}</span>
@@ -677,7 +682,7 @@ let DB=null,ACCT=null,TASKS=[],LG={user:'',pics:[],err:'',busy:false};
 const first=n=>String(n||'').split(' ')[0];
 const PIC=k=>`<svg viewBox="0 0 32 32"><use href="#i-${k}"/></svg>`;
 function waitDB(ms){return new Promise(r=>{if(window.NumiDB)return r(window.NumiDB);if(window.NUMIDB_FAIL)return r(null);const t=setTimeout(()=>r(null),ms);addEventListener('numidb',()=>{clearTimeout(t);r(window.NumiDB)},{once:true});addEventListener('numidbfail',()=>{clearTimeout(t);r(null)},{once:true})})}
-function loadingView(t){topEl.innerHTML='';app.innerHTML=`<div class="loading"><div><div class="numi-big" style="max-width:150px;margin:0 auto">${numi(S.eq,'happy')}</div><p style="font-weight:600;font-size:20px">${t||'Cargando…'}</p></div></div>`}
+function loadingView(t){topEl.innerHTML='';app.innerHTML=`<div class="boot" role="status"><div class="boot-ring"><div class="boot-numi">${numi(S.eq,'happy')}</div></div><p>${t||'Cargando…'}</p></div>`}
 function loginView(){
   G=null;topEl.innerHTML='';curHash='entrar';if(location.hash!=='#entrar')location.replace('#entrar');
   app.innerHTML=`<section class="hero"><div class="wrap"><div class="numi-big">${numi(S.eq,'happy')}</div>
@@ -722,7 +727,7 @@ async function enterAccount(st){
   Object.keys(S.prog).forEach(k=>{if(S.prog[k].every(x=>x>0)){S.crowns[k]=true;earned+=10}});
   S.earnedAll=earned;S.stars=earned-S.spent;S.learned=learned;
   ACCT={st};
-  try{const ts=await DB.myTasks(st.courseId);TASKS=ts.filter(t=>!rs.some(r=>r.isl==t.isl&&r.lvl==t.lvl&&r.t>=t.created)).sort((a,b)=>a.due-b.due)}catch(e){TASKS=[]}
+  try{const ts=await DB.myTasks(st.courseId);TASKS=ts.filter(t=>t.due>=Date.now()&&!rs.some(r=>r.isl==t.isl&&r.lvl==t.lvl&&r.t>=t.created)).sort((a,b)=>a.due-b.due)}catch(e){TASKS=[]}
   save();boot();
 }
 function saveWardrobe(){if(ACCT&&DB)DB.saveWardrobe({owned:S.owned,eq:S.eq,spent:S.spent||0}).catch(()=>{})}
@@ -1060,7 +1065,7 @@ document.addEventListener('click',e=>{
   if(a==='practice'){ACCT=null;STORE='numi-v3';try{Object.assign(S,JSON.parse(localStorage.getItem(STORE)||'{}'))}catch(e){}boot();return}
   if(a==='tologin'){G=null;loginView();return}
   if(a==='logout'){logoutAcc();return}
-  if(a==='task'){start(b.dataset.w,b.dataset.l);scrollTo(0,0);return}
+  if(a==='task'){if(+b.dataset.due<Date.now()){TASKS=TASKS.filter(t=>t.due>=Date.now());toast('Esta tarea ya se cerró: pasó la fecha límite.');mapView();return}start(b.dataset.w,b.dataset.l);scrollTo(0,0);return}
   if(a==='map'){if(G&&!G.over)persist();G=null;mapView();scrollTo(0,0)}
   else if(a==='settings'){G=null;home();scrollTo(0,0)}
   else if(a==='mute'){S.mute=!S.mute;save();header();if(!S.mute)sound('star')}
