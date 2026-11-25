@@ -167,7 +167,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--coral);min-height:32p
 .slist{display:grid;gap:10px;margin-top:var(--s2)}@media(min-width:760px){.slist{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .scard{display:flex;align-items:center;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:4px 4px 4px 12px;transition:border-color .15s}.scard:hover{border-color:var(--muted)}
 .scard-main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;min-height:68px;padding:8px 0;color:inherit}
-.scard .av{width:42px;height:42px;font-size:15px}
+.scard .sc-av{width:42px;height:42px;font-size:15px;font-style:normal;background:var(--soft);color:var(--ink);border:1px solid var(--line)}
 .sc-txt{flex:1;min-width:0;display:grid;gap:4px}.sc-txt b{font-size:16px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.sc-txt small{color:var(--muted);font-size:13px;font-weight:700}
 .sc-bar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--line);max-width:170px}.sc-bar i{display:block;height:100%}
 .sc-nota{flex:none;display:grid;justify-items:end;gap:3px}.sc-nota b{font-family:Fredoka,sans-serif;font-size:24px;line-height:1;font-weight:700}
@@ -266,8 +266,6 @@ const C=()=>D.classes[V.cls]||null;
 
 const ME=()=>ME_P;
 const myClasses=()=>V.role=='admin'?D.classes.filter(c=>c.year==D.year):D.classes.filter(c=>c.year==D.year&&(ME_P.access||[]).includes(c.id));
-const AVC=['#e9456f','#13998b','#3d8bd9','#8a5cd1','#e08a00','#d1497f'];
-const avColor=n=>{let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))>>>0;return AVC[h%AVC.length]};
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 function topbar(){const nm=ME_P?ME_P.name:'';return `<header class="bar"><div class="wrap"><button class="brand" data-a="home">${NUMI}<span>Numi <small>${V.role=='admin'?'Súper usuario':'Panel docente'}</small></span></button>
 <button class="btn ghost sm help" data-a="help">Ayuda</button><button class="who" data-a="logout" title="Salir de tu cuenta"><span>${nm}</span><i class="av" style="${V.role=='admin'?'background:var(--ink)':''}">${ini(nm)}</i><b class="out">Salir</b></button></div></header>`}
@@ -495,10 +493,10 @@ function estudiantes(){
   st=[...st].sort(sorters[V.sort]);
   return `<div class="tools"><input id="q" placeholder="Buscar estudiante" value="${esc(V.q)}" aria-label="Buscar estudiante"><select id="sort" aria-label="Ordenar">
   ${[['name','Orden alfabético'],['notaD','Nota: mayor a menor'],['nota','Nota: menor a mayor'],['last','Último ingreso']].map(([k,n])=>`<option value="${k}" ${V.sort==k?'selected':''}>${n}</option>`).join('')}</select></div>
-  ${st.length?`<div class="legend-mini"><span><i style="background:var(--teal)"></i>A la primera</span><span><i style="background:var(--gold)"></i>Con error</span><span><i style="background:var(--coral)"></i>Con ayuda</span></div>`:''}
+  ${st.some(x=>x.retos.length)?`<div class="legend-mini"><span><i style="background:var(--teal)"></i>A la primera</span><span><i style="background:var(--gold)"></i>Con error</span><span><i style="background:var(--coral)"></i>Con ayuda</span></div>`:''}
   <div class="slist">${st.map(s=>{const c=counts(s),n=finalNota(s),d=desemp(n),l=last(s);
     const bar=c.t?`<span class="sc-bar" aria-label="${pct(c.p/c.t)} a la primera, ${pct((c.s+c.m)/c.t)} con error, ${pct(c.a/c.t)} con ayuda"><i style="width:${c.p/c.t*100}%;background:var(--teal)"></i><i style="width:${(c.s+c.m)/c.t*100}%;background:var(--gold)"></i><i style="width:${c.a/c.t*100}%;background:var(--coral)"></i></span>`:'';
-    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av" style="background:${avColor(s.name)}">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>${l?`${ago(l)} · ${s.retos.length} ${s.retos.length==1?'reto':'retos'}`:'Todavía no ha jugado'}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
+    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av sc-av">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>${l?`${ago(l)} · ${s.retos.length} ${s.retos.length==1?'reto':'retos'}`:'Todavía no ha jugado'}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
   ${st.length?'<p class="muted" style="font-size:14px;margin-top:var(--s2)">Toca a una estudiante para ver sus notas. Con los tres puntitos <b>⋮</b> puedes cambiar su clave o eliminarla si se retiró.</p>':''}
   ${st.length?'':'<p class="muted" style="margin-top:var(--s3)">No hay estudiantes con ese nombre.</p>'}`;
 }
