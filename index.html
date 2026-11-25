@@ -734,8 +734,9 @@ async function enterAccount(st){
   // Resumen de la niña (1 sola lectura). Si tenía retos de antes del resumen, se calcula una vez y se guarda.
   let stt=st.st;
   let redo=false;try{redo=localStorage.getItem('numi-rehacer-'+st.id)=='1'}catch(e){}
-  if(!stt||!stt.v||redo){let rs=[];try{rs=await DB.myResults()}catch(e){toast('No se pudo cargar tu progreso. Revisa el internet.')}stt=DB.buildStats(rs);DB.saveStats(st.id,stt).then(()=>{try{localStorage.removeItem('numi-rehacer-'+st.id)}catch(e){}}).catch(()=>{})}
+  if(!stt||!stt.v||redo){let rs=[];try{rs=await DB.myResults()}catch(e){toast('No se pudo cargar tu progreso. Revisa el internet.')}stt=DB.buildStats(rs);stt.seen=Date.now();SEEN_T=stt.seen;DB.saveStats(st.id,stt).then(()=>{try{localStorage.removeItem('numi-rehacer-'+st.id)}catch(e){}}).catch(()=>{})}
   applyStats(stt);
+  if(SEEN_T<Date.now()-5000)seenNow(st.id,true);
   ACCT={st};watchSession();
   try{await sendPending(st)}catch(e){}
   try{const ts=await DB.myTasks(st.courseId);TASKS=ts.filter(t=>t.due>=Date.now()&&!doneIn(t)).sort((a,b)=>a.due-b.due)}catch(e){TASKS=[]}
@@ -996,7 +997,10 @@ function makeRound(w,l,grade){
   for(let i=0;i<5;i++){let q,t=0;do{q=W[w].gen(g,bag[i]);t++}while((seen.has(q.ask)||(i&&out[i-1].ask===q.ask))&&t<12);seen.add(q.ask);out.push(q)}
   return out;
 }
-function start(w,l,g){g=g||S.grade;G={w,l:+l,g,m:S.mode,i:0,earned:[],outs:[],streak:0,qs:makeRound(w,+l,g)};nextQ()}
+// Avisa al panel que la niña está jugando (máximo una vez cada 10 minutos, para no gastar escrituras)
+let SEEN_T=0;
+function seenNow(id,force){if(!DB||!id)return;if(!force&&Date.now()-SEEN_T<10*60000)return;SEEN_T=Date.now();DB.markSeen(id)}
+function start(w,l,g){if(ACCT&&ACCT.st)seenNow(ACCT.st.id);g=g||S.grade;G={w,l:+l,g,m:S.mode,i:0,earned:[],outs:[],streak:0,qs:makeRound(w,+l,g)};nextQ()}
 function nextQ(){
   if(G.i>=5)return done();
   const g=G.l==0&&G.g>3?G.g-1:G.g;
