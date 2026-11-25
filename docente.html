@@ -172,6 +172,9 @@ details summary{cursor:pointer;font-weight:700;color:var(--coral);min-height:32p
 .tour-block{position:fixed;inset:0;z-index:44}
 .tour-tip{position:fixed;left:12px;right:12px;bottom:16px;z-index:46;max-width:460px;margin:0 auto;display:grid;gap:8px}
 .tour-tip .tn{display:flex;gap:10px;align-items:center}.tour-tip .tn svg{width:52px;height:52px;flex:none}
+.tour-tip.up{bottom:auto;top:76px}
+.tour-hand{position:fixed;z-index:47;font-size:40px;line-height:1;pointer-events:none;filter:drop-shadow(0 2px 3px rgb(0 0 0/.4));animation:tap 1.1s ease-in-out infinite}
+@keyframes tap{0%,100%{transform:translateY(8px) scale(1)}45%{transform:translateY(-4px) scale(.88)}60%{transform:translateY(-4px) scale(.88)}}
 @media print{body>*:not(#print){display:none!important}#print{display:block}#print .cards{grid-template-columns:repeat(3,1fr);gap:10px}#print .ucard{break-inside:avoid;border:2px dashed #888;color:#2b1d3a;background:#fff}}
 </style>
 <script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
@@ -597,60 +600,95 @@ function config(){
   ${cl?'':`<button class="link" data-a="screset" style="margin-top:var(--s2)">Volver a la escala original de Numi</button>`}</section></div>`;
 }
 
-/* ---------- recorrido de la primera vez ---------- */
+/* ---------- recorrido guiado: entra a cada sección y señala dónde tocar ---------- */
 let TOURON=false;
-const TS={refresh:{sel:'[data-a=refresh]',t:'Ver datos nuevos',d:'Si las niñas están jugando en este momento, toca aquí para ver sus notas recién hechas.'},
-  help:{sel:'.help',t:'Ayuda',d:'Si no sabes cómo hacer algo, toca aquí: están los pasos de lo más común. También puedes repetir este recorrido.'},
-  who:{sel:'.who',t:'Salir',d:'Cuando termines, toca aquí para cerrar tu cuenta.'}};
+// Pasos: tab = sección del salón que se abre · sel = lo que se señala · student = abre la ficha de la primera niña · atab = sección del colegio
+// alt = texto si eso no aparece todavía (si no hay alt, el paso se salta)
+const ST={
+  tabs:{tab:'resumen',sel:'.tabs',t:'Las secciones del salón',d:'Cada botón abre una parte del salón. Te voy a llevar a las más importantes y te señalo dónde tocar.'},
+  foto:{tab:'usuarios',sel:'[data-a=phcam]',t:'Crear la lista de las niñas',d:'Ya estás en <b>Usuarios</b>. Toca <b>Tomar foto</b> y tómale una foto a la lista del salón, con buena luz. Numi lee los nombres sola.'},
+  gal:{tab:'usuarios',sel:'[data-a=phgal]',t:'¿Ya tienes la foto?',d:'Si la foto ya está en tu celular, toca <b>Elegir de la galería</b>.'},
+  pegar:{tab:'usuarios',sel:'[data-a=paste]',t:'¿No tienes la lista en papel?',d:'Toca aquí para escribir los nombres o pegarlos desde Word o Excel, uno por línea.'},
+  revisar:{tab:'usuarios',t:'Después, revisa y crea',d:'Numi te muestra los nombres que leyó. Corrige los que salgan en <b>amarillo</b> y toca <b>Crear usuarios</b>.'},
+  print:{tab:'usuarios',sel:'[data-a=print]',t:'Imprimir las tarjetas',d:'Toca aquí para imprimir una tarjeta por niña con su usuario y sus 3 dibujitos. Recórtalas y entrégale a cada una la suya.',alt:'Cuando crees las estudiantes, aquí aparece el botón para imprimir sus tarjetas.'},
+  clave:{tab:'usuarios',sel:'main details summary',t:'Ver la clave de una niña',d:'Toca <b>Estudiantes con usuario</b>: ahí están el usuario y los dibujitos de cada niña. No hace falta cambiarle la clave.',alt:'Cuando crees las estudiantes, aquí verás el usuario y la clave de cada una.'},
+  nina:{tab:'estudiantes',sel:'tr.click td',t:'Ver cómo va cada niña',d:'Ya estás en <b>Estudiantes</b>. Toca el nombre de una niña para ver sus notas y todo lo que ha jugado.'},
+  dots:{tab:'estudiantes',sel:'[data-a=stumenu]',t:'Los tres puntitos ⋮',d:'Toca los tres puntitos junto a su nombre para cambiarle la clave, imprimir su tarjeta o eliminarla si se retiró.'},
+  borrar:{tab:'estudiantes',t:'Eliminar a la que se retiró',d:'En el menú de los tres puntitos, toca <b>Eliminar estudiante (se retiró)</b> y confirma. Deja de contar en los promedios.'},
+  ajuste:{student:true,sel:'[data-a=ovedit]',t:'Poner una nota a mano',d:'Esta es la ficha de una niña. Toca <b>Ajustar nota</b> en la isla que quieras, escribe la nota de 1,0 a 5,0 y toca <b>Guardar</b>.'},
+  excel:{tab:'notas',sel:'[data-a=xlsx]',t:'Descargar las notas',d:'Ya estás en <b>Planilla de notas</b>. Toca <b>Descargar en Excel</b> y el archivo queda en la carpeta Descargas del celular o del computador.'},
+  isla:{tab:'tareas',sel:'#ti',t:'Dejar una tarea · 1. La isla',d:'Ya estás en <b>Tareas</b>. Toca aquí y elige la isla, por ejemplo <b>Sumas</b>.'},
+  nivel:{tab:'tareas',sel:'#tl',t:'2. El nivel',d:'Elige qué tan difícil: <b>1 Calentando</b>, <b>2 En marcha</b> o <b>3 Desafío</b>.'},
+  fecha:{tab:'tareas',sel:'#td',t:'3. La fecha límite',d:'Toca aquí y elige hasta qué día tienen para hacerla.'},
+  asignar:{tab:'tareas',sel:'[data-a=addtask]',t:'4. Toca Asignar',d:'¡Listo! Las niñas verán la tarea en su mapa del juego, y aquí abajo verás cuáles ya la hicieron.'},
+  wipe:{tab:'usuarios',sel:'[data-a=wipe]',t:'Borrar el listado equivocado',d:'Toca aquí y confirma. Después vuelve a tomar la foto de la lista correcta.',alt:'Esta opción solo aparece si ninguna niña ha jugado todavía. Si ya jugaron, elimínalas una por una con los tres puntitos ⋮ en <b>Estudiantes</b>.'},
+  escala:{tab:'config',sel:'.scale',t:'La escala de notas',d:'Ya estás en <b>Configuración</b>. Solo si quieres cambiar cuánto vale cada respuesta: escribe el valor nuevo y toca <b>Guardar escala</b>.'},
+  ayuda:{tab:'resumen',sel:'.help',t:'¿Se te olvida algo?',d:'Toca <b>Ayuda</b> cuando quieras. En cada pregunta está el botón <b>Muéstrame cómo</b>: te lleva y te señala dónde tocar, como ahora.'}};
 const TOURS={
-  home:()=>[{t:`¡Hola, ${esc(first(ME_P.name))}! Te muestro el panel`,d:'Son unos pasos cortos. Puedes saltarlos y verlos después desde el botón Ayuda.'},
+  home:()=>[{t:`¡Hola, ${esc(first(ME_P.name))}! Te muestro el panel`,d:'Te voy a señalar con la manito 👆 dónde tocar. Puedes saltarlo y verlo después desde el botón Ayuda.'},
     V.role=='admin'?{sel:'.tabs',t:'Las secciones del colegio',d:'Colegio: los promedios de todos los cursos. Profesores: crearlos y darles acceso. Cursos: los cursos de cada año.'}
-      :{sel:'.salones',t:'Tus salones',d:'Aquí están los cursos que te asignaron. Toca uno para ver a sus estudiantes y sus notas.'},TS.refresh,TS.help,TS.who],
-  salon:()=>[{sel:'.tabs',t:'Las secciones del salón',d:'Toca la que necesites. Todas están aquí a la vista.'},
-    {sel:'[data-t=usuarios]',t:'Usuarios: la lista y las tarjetas',d:'Aquí tomas la foto de la lista del salón para crear los usuarios de las niñas, y aquí imprimes sus tarjetas de ingreso.'},
-    {sel:'[data-t=estudiantes]',t:'Estudiantes',d:'Toca a una niña para ver sus notas. Con los tres puntitos ⋮ cambias su clave o la eliminas si se retiró.'},
-    {sel:'[data-t=notas]',t:'Planilla de notas',d:'Todas las notas del salón. Desde aquí las descargas en Excel.'},
-    {sel:'[data-t=config]',t:'Configuración',d:'La escala de notas. Si cambias algo, toca Guardar escala para que se aplique.'}]};
+      :{sel:'.salon',t:'Entra a tu salón',d:'Toca el recuadro de un salón para entrar. Adentro está todo: la lista de las niñas, sus notas y las tareas. Cuando entres, te muestro cómo se usa.'},
+    {sel:'[data-a=refresh]',t:'Ver datos nuevos',d:'Si las niñas están jugando en este momento, toca aquí para ver sus notas recién hechas.'},
+    {sel:'.help',t:'Ayuda',d:'Si no sabes cómo hacer algo, toca aquí: están los pasos de lo más común y te los muestro en la pantalla.'},
+    {sel:'.who',t:'Salir',d:'Cuando termines, toca aquí para cerrar tu cuenta.'}],
+  salon:()=>[ST.tabs,ST.foto,ST.pegar,ST.print,ST.nina,ST.dots,ST.excel,ST.isla,ST.nivel,ST.fecha,ST.asignar,ST.escala,ST.ayuda]};
 const tourKey=n=>'numi-tour-'+n+'-'+(ME_P?.uid||'');
 function tourSeen(n){try{return localStorage.getItem(tourKey(n))=='1'}catch(e){return false}}
 function tourMark(n){try{localStorage.setItem(tourKey(n),'1')}catch(e){}}
 function maybeTour(){if(TOURON||$('.modal')||!ME_P)return;const n=V.screen=='home'?'home':V.screen=='salon'?'salon':null;if(n&&!tourSeen(n))tour(n)}
-function tour(n){
-  const steps=TOURS[n]().filter(x=>!x.sel||$(x.sel));if(!steps.length)return;TOURON=true;tourMark(n);let i=0;
-  const blk=document.createElement('div');blk.className='tour-block';const tip=document.createElement('div');tip.className='card tour-tip';tip.setAttribute('role','dialog');tip.setAttribute('aria-live','polite');document.body.append(blk,tip);
+// src: nombre de un recorrido o lista de pasos. back: al terminar vuelve a donde estaba
+function tour(src,back=typeof src=='string'){
+  const steps=typeof src=='string'?TOURS[src]():src;if(typeof src=='string')tourMark(src);
+  TOURON=true;let i=-1,shown=0;const from={screen:V.screen,tab:V.tab,student:V.student};
+  const blk=document.createElement('div');blk.className='tour-block';const tip=document.createElement('div');tip.className='card tour-tip';tip.setAttribute('role','dialog');tip.setAttribute('aria-live','polite');
+  const hand=document.createElement('div');hand.className='tour-hand';hand.textContent='👆';hand.setAttribute('aria-hidden','true');document.body.append(blk,tip,hand);
   const clear=()=>$$('.tour-hl').forEach(e=>e.classList.remove('tour-hl'));
-  const end=()=>{clear();blk.remove();tip.remove();TOURON=false};
-  const show=()=>{clear();const st=steps[i],el=st.sel&&$(st.sel);
-    if(el){el.classList.add('tour-hl');el.scrollIntoView({block:'center'})}
+  const end=()=>{clear();blk.remove();tip.remove();hand.remove();removeEventListener('resize',place);TOURON=false;
+    if(back&&(V.screen!=from.screen||V.tab!=from.tab)){Object.assign(V,from);render();scrollTo(0,0)}};
+  let cur=null;
+  function place(){if(!cur||!cur.isConnected){hand.style.display='none';return}const r=cur.getBoundingClientRect();
+    hand.style.display='block';hand.style.left=Math.min(innerWidth-48,Math.max(4,r.left+Math.min(r.width/2,90)-16))+'px';hand.style.top=Math.min(innerHeight-60,r.bottom-8)+'px';
+    tip.classList.toggle('up',r.top+r.height/2>innerHeight*.5)}
+  function go(){
+    i++;if(i>=steps.length)return end();const st=steps[i];
+    if(st.atab&&(V.screen!='home'||V.atab!=st.atab)){V.screen='home';V.atab=st.atab;render()}
+    if(st.tab&&C()&&(V.screen!='salon'||V.tab!=st.tab)){V.screen='salon';V.tab=st.tab;V.ocr=null;render()}
+    if(st.student&&C()){const s0=C().students[0];if(s0&&(V.screen!='student'||V.student!=s0.id)){V.screen='student';V.student=s0.id;V.tab='estudiantes';render()}}
+    const el=st.sel?$(st.sel):null;
+    if(st.sel&&!el&&!st.alt)return go();
+    shown++;clear();cur=el;
+    if(el){el.classList.add('tour-hl');el.scrollIntoView({block:'center'})}else scrollTo(0,0);
     blk.style.background=el?'transparent':'rgb(23 19 42/.6)';
-    tip.innerHTML=`<div class="tn">${NUMI}<div><b style="font-family:Fredoka,sans-serif;font-size:19px">${st.t}</b><div class="muted" style="font-size:13px">Paso ${i+1} de ${steps.length}</div></div></div><p style="margin:0">${st.d}</p><div class="tools" style="margin:4px 0 0"><button class="btn" data-k="next">${i==steps.length-1?'¡Entendido!':'Siguiente'}</button>${i<steps.length-1?'<button class="btn ghost" data-k="skip">Saltar</button>':''}</div>`;
-    tip.querySelector('[data-k=next]').focus()};
-  tip.addEventListener('click',e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(k=='next'){i++;i<steps.length?show():end()}else if(k=='skip')end()});
-  show();
+    tip.innerHTML=`<div class="tn">${NUMI}<div><b style="font-family:Fredoka,sans-serif;font-size:19px">${st.t}</b><div class="muted" style="font-size:13px">Paso ${i+1} de ${steps.length}</div></div></div><p style="margin:0">${el||!st.alt?st.d:st.alt}</p><div class="tools" style="margin:4px 0 0"><button class="btn" data-k="next">${i>=steps.length-1?'¡Entendido!':'Siguiente'}</button>${i>0?'<button class="btn ghost" data-k="prev">Atrás</button>':''}${i<steps.length-1?'<button class="btn ghost" data-k="skip">Salir del recorrido</button>':''}</div>`;
+    requestAnimationFrame(place);tip.querySelector('[data-k=next]').focus();
+  }
+  tip.addEventListener('click',e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(k=='next')go();else if(k=='prev'){i=Math.max(-1,i-2);go()}else if(k=='skip')end()});
+  addEventListener('resize',place);go();
 }
 
 /* ---------- ¿Cómo hago…? ---------- */
 const HOWTO=[
-  {t:'Crear la lista de mi salón',go:'usuarios',s:['Abre tu salón.','Toca la sección <b>Usuarios</b>.','Toca <b>Tomar foto</b> y tómale una foto a la lista del salón, con buena luz.','Revisa los nombres. Los que salen en amarillo parecen raros: corrígelos.','Toca <b>Crear usuarios</b>.']},
-  {t:'Imprimir las tarjetas de ingreso',go:'usuarios',s:['Abre tu salón y toca <b>Usuarios</b>.','Toca <b>Imprimir las tarjetas</b>.','Entrega a cada niña la suya: tiene su usuario y sus 3 dibujitos.']},
-  {t:'Ver o descargar las notas',go:'notas',s:['Abre tu salón y toca <b>Planilla de notas</b>.','Toca <b>Descargar en Excel</b>. El archivo queda en Descargas.']},
-  {t:'Una niña olvidó su clave',go:'usuarios',s:['Abre tu salón y toca <b>Usuarios</b>.','Abre <b>Estudiantes con usuario</b>: ahí están el usuario y los dibujitos de cada niña.','No hace falta cambiarla. Si quieres darle una nueva, toca <b>Cambiar clave</b> e imprímele la tarjeta.']},
-  {t:'Una niña se retiró del colegio',go:'estudiantes',s:['Abre tu salón y toca <b>Estudiantes</b>.','Toca los tres puntitos <b>⋮</b> junto a su nombre.','Toca <b>Eliminar estudiante</b> y confirma. Deja de contar en los promedios.']},
-  {t:'Me equivoqué de listado',go:'usuarios',s:['Abre tu salón y toca <b>Usuarios</b>.','Si ninguna niña ha jugado todavía, verás <b>¿Te equivocaste de listado?</b>','Toca <b>Eliminar las estudiantes</b> y vuelve a tomar la foto correcta.']},
-  {t:'Poner una nota a mano',go:'estudiantes',s:['Abre tu salón, toca <b>Estudiantes</b> y toca a la niña.','En <b>Notas por isla</b>, toca <b>Ajustar nota</b>.','Escribe la nota (de 1,0 a 5,0) y toca <b>Guardar</b>.']},
-  {t:'Dejarles una tarea a las niñas',go:'tareas',s:['Abre tu salón y toca <b>Tareas</b>.','Elige la isla, el nivel y la fecha límite.','Toca <b>Asignar</b>. Las niñas la ven en su mapa.']}];
+  {t:'Crear la lista de mi salón',steps:[ST.foto,ST.gal,ST.pegar,ST.revisar],s:['Abre tu salón.','Toca la sección <b>Usuarios</b>.','Toca <b>Tomar foto</b> y tómale una foto a la lista del salón, con buena luz.','Revisa los nombres. Los que salen en amarillo parecen raros: corrígelos.','Toca <b>Crear usuarios</b>.']},
+  {t:'Imprimir las tarjetas de ingreso',steps:[ST.print],s:['Abre tu salón y toca <b>Usuarios</b>.','Toca <b>Imprimir las tarjetas</b>.','Entrega a cada niña la suya: tiene su usuario y sus 3 dibujitos.']},
+  {t:'Ver o descargar las notas',steps:[ST.excel,ST.nina],s:['Abre tu salón y toca <b>Planilla de notas</b>.','Toca <b>Descargar en Excel</b>. El archivo queda en Descargas.']},
+  {t:'Dejarles una tarea a las niñas',steps:[ST.isla,ST.nivel,ST.fecha,ST.asignar],s:['Abre tu salón y toca <b>Tareas</b>.','Elige la isla, el nivel y la fecha límite.','Toca <b>Asignar</b>. Las niñas la ven en su mapa.']},
+  {t:'Una niña olvidó su clave',steps:[ST.clave],s:['Abre tu salón y toca <b>Usuarios</b>.','Abre <b>Estudiantes con usuario</b>: ahí están el usuario y los dibujitos de cada niña.','No hace falta cambiarla. Si quieres darle una nueva, toca <b>Cambiar clave</b> e imprímele la tarjeta.']},
+  {t:'Una niña se retiró del colegio',steps:[ST.dots,ST.borrar],s:['Abre tu salón y toca <b>Estudiantes</b>.','Toca los tres puntitos <b>⋮</b> junto a su nombre.','Toca <b>Eliminar estudiante</b> y confirma. Deja de contar en los promedios.']},
+  {t:'Me equivoqué de listado',steps:[ST.wipe],s:['Abre tu salón y toca <b>Usuarios</b>.','Si ninguna niña ha jugado todavía, verás <b>¿Te equivocaste de listado?</b>','Toca <b>Eliminar las estudiantes</b> y vuelve a tomar la foto correcta.']},
+  {t:'Poner una nota a mano',steps:[ST.nina,ST.ajuste],s:['Abre tu salón, toca <b>Estudiantes</b> y toca a la niña.','En <b>Notas por isla</b>, toca <b>Ajustar nota</b>.','Escribe la nota (de 1,0 a 5,0) y toca <b>Guardar</b>.']},
+  {t:'Cambiar la escala de notas',steps:[ST.escala],s:['Abre tu salón y toca <b>Configuración</b>.','Escribe el valor nuevo.','Toca <b>Guardar escala</b> y confirma.']}];
 const HOWTO_ADMIN=[
-  {t:'Crear un profesor',atab:'profesores',s:['Toca <b>Profesores</b>.','Escribe su nombre, correo y celular, y elige sus cursos.','Toca <b>Crear profesor</b> y envíale el mensaje por WhatsApp.']},
-  {t:'Crear los cursos del año',atab:'cursos',s:['Toca <b>Cursos</b>.','Elige el grado y el año, y revisa el nombre y los profesores.','Toca <b>Crear curso</b>.']}];
+  {t:'Crear un profesor',steps:[{atab:'profesores',sel:'#ntn',t:'1. Sus datos',d:'Escribe el nombre, el correo y el celular del profesor.'},{atab:'profesores',sel:'[data-a=ntsave]',t:'2. Crear y enviar',d:'Elige sus cursos y toca aquí. Numi te da un mensaje listo para enviarle por WhatsApp.'}],s:['Toca <b>Profesores</b>.','Escribe su nombre, correo y celular, y elige sus cursos.','Toca <b>Crear profesor</b> y envíale el mensaje por WhatsApp.']},
+  {t:'Crear los cursos del año',steps:[{atab:'cursos',sel:'#ncg',t:'1. El grado',d:'Elige el grado y el año. Numi te sugiere el nombre del curso.'},{atab:'cursos',sel:'[data-a=ncsave]',t:'2. Crear el curso',d:'Elige los profesores y toca aquí.'}],s:['Toca <b>Cursos</b>.','Elige el grado y el año, y revisa el nombre y los profesores.','Toca <b>Crear curso</b>.']}];
 function showHelp(){
   const list=[...(V.role=='admin'?HOWTO_ADMIN:[]),...HOWTO];
-  const m=sheet(`<h3>¿Cómo hago…?</h3><p class="muted" style="font-size:14px;margin:4px 0 6px">Toca una pregunta para ver los pasos.</p><div class="howto">${list.map((h,k)=>`<details><summary>${h.t}</summary><ol>${h.s.map(x=>`<li>${x}</li>`).join('')}</ol><button class="btn sm alt" data-k="go" data-i="${k}">Llévame ahí</button></details>`).join('')}</div><div class="tools" style="margin:var(--s2) 0 0"><button class="btn ghost" data-k="tour">Ver el recorrido otra vez</button><button class="btn ghost" data-k="x">Cerrar</button></div>`);
+  const m=sheet(`<h3>¿Cómo hago…?</h3><p class="muted" style="font-size:14px;margin:4px 0 6px">Toca una pregunta para ver los pasos. Con <b>Muéstrame cómo</b> te llevo y te señalo dónde tocar.</p><div class="howto">${list.map((h,k)=>`<details><summary>${h.t}</summary><ol>${h.s.map(x=>`<li>${x}</li>`).join('')}</ol><button class="btn sm alt" data-k="go" data-i="${k}">👆 Muéstrame cómo</button></details>`).join('')}</div><div class="tools" style="margin:var(--s2) 0 0"><button class="btn ghost" data-k="tour">Ver el recorrido completo</button><button class="btn ghost" data-k="x">Cerrar</button></div>`);
   m.addEventListener('click',async e=>{const el=e.target.closest('[data-k]'),k=el?.dataset.k;if(!k){if(e.target===m)m.remove();return}
-    m.remove();if(k=='tour'){tour(V.screen=='salon'?'salon':'home');return}
-    if(k!='go')return;const h=list[+el.dataset.i];if(!await okToLeave())return;
-    if(h.atab){V.screen='home';V.atab=h.atab;render();scrollTo(0,0);return}
-    if(V.screen=='home'){const mine=myClasses();if(mine.length!=1){toast('Primero toca el salón que quieres. Luego vuelve a Ayuda.');return}V.cls=D.classes.indexOf(mine[0])}
-    V.screen='salon';V.tab=h.go;render();scrollTo(0,0)});
+    m.remove();if(k=='x')return;if(!await okToLeave())return;
+    if(k=='tour'){if(V.screen=='home'&&V.role!='admin'){const mine=myClasses();if(mine.length==1){V.cls=D.classes.indexOf(mine[0]);V.screen='salon';V.tab='resumen';render();return tour('salon')}return tour('home')}return tour(V.screen=='home'?'home':'salon')}
+    const h=list[+el.dataset.i];
+    if(!h.steps[0].atab&&(V.screen=='home'||!C())){const mine=myClasses();if(mine.length!=1){toast('Primero toca el salón que quieres. Luego vuelve a Ayuda.');return}V.cls=D.classes.indexOf(mine[0])}
+    tour(h.steps,false)});
 }
 
 /* ---------- datos nuevos sin perder la pantalla ---------- */
