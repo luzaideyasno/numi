@@ -7,7 +7,10 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
   updateDoc, deleteDoc, addDoc, collection, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 import { firebaseConfig, STUDENT_DOMAIN, RECAPTCHA_SITE_KEY, RECAPTCHA_ENTERPRISE } from "./firebase-config.js";
 
-const app = initializeApp(firebaseConfig);
+// El panel y el juego usan sesiones separadas: así entrar como niña en una pestaña
+// no cambia la sesión del profesor en otra (ni al revés).
+const IS_PANEL = /docente|acceso/.test(location.pathname);
+const app = IS_PANEL ? initializeApp(firebaseConfig, 'numi-panel') : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 auth.languageCode = 'es'; // correos de Firebase en español
 let db;
@@ -210,8 +213,18 @@ export const NumiDB = {
     return st;
   },
   async myResults() { return list(await getDocs(query(collection(db, 'results'), where('studentUid', '==', auth.currentUser.uid)))); },
-  saveResult: r => addDoc(collection(db, 'results'), { ...r, studentUid: auth.currentUser.uid, t: Date.now() }),
-  saveWardrobe: w => updateDoc(doc(db, 'students', auth.currentUser.uid), { wardrobe: w }),
+  // Guarda el reto SOLO si la sesión activa es de la niña que lo jugó (r.studentUid).
+  // Si en este navegador entró otra cuenta mientras jugaba, no lo guarda a nombre de otra.
+  saveResult: r => {
+    const u = auth.currentUser;
+    if (!u || !r.studentUid || u.uid !== r.studentUid) return Promise.reject(Object.assign(new Error('La sesión cambió'), { code: 'numi/session-changed' }));
+    return addDoc(collection(db, 'results'), { t: Date.now(), ...r });
+  },
+  saveWardrobe: (w, id) => {
+    const u = auth.currentUser;
+    if (!u || !id || u.uid !== id) return Promise.reject(Object.assign(new Error('La sesión cambió'), { code: 'numi/session-changed' }));
+    return updateDoc(doc(db, 'students', id), { wardrobe: w });
+  },
   myTasks: courseId => byCourse('tasks', courseId)
 };
 
