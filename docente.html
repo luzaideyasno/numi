@@ -43,6 +43,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:none}
 .btn.sm{min-height:38px;padding:0 12px;font-size:14px;border-radius:12px}
 .btn:active{transform:translateY(2px);box-shadow:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .link{color:var(--coral);font-weight:700;text-decoration:underline;min-height:44px}
 /* ingreso */
 .login{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
@@ -53,7 +54,7 @@ label{font-weight:700;font-size:15px;display:block;margin-bottom:6px}
 input,select,textarea{width:100%;font-size:16px;padding:11px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card)}
 textarea{min-height:80px;resize:vertical}
 /* pestañas */
-.tabs{display:flex;gap:6px;overflow-x:auto;padding:var(--s2) 0;scrollbar-width:none}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;padding:var(--s2) 0}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex:none;min-height:44px;padding:0 16px;border-radius:99px;font-weight:800;font-size:15px;color:var(--muted);background:var(--card);border:2px solid var(--line)}
 .tab.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
@@ -110,7 +111,8 @@ tr.click{cursor:pointer}tr.click:hover td{background:light-dark(#fdf7fa,#2c2346)
 .q-m{background:var(--warn);color:light-dark(#7a5500,#ffd77a)}.q-a{background:var(--bad);color:light-dark(#b72f53,#ffb3c7)}
 .reto{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px var(--s3);padding:var(--s2) 0;border-top:1px solid var(--line)}
 .reto:first-of-type{border-top:0}.reto small{color:var(--muted)}
-.override{display:flex;gap:6px;align-items:center}.override input{width:76px;padding:6px 8px;text-align:right}
+.override{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
+.isl-row{flex-wrap:wrap}.isl-row>div{min-width:8.5em}.override input{width:76px;padding:6px 8px;text-align:right}
 .isl-list{display:grid}.isl-row{display:flex;align-items:center;gap:var(--s2);padding:10px 0;border-top:1px solid var(--line)}.isl-row:first-child{border-top:0}
 .isl-row div{flex:1}.isl-row b{display:block}.isl-row small{color:var(--muted);font-size:13px}.dot{width:12px;height:12px;border-radius:50%;flex:none}
 .acc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
@@ -158,7 +160,18 @@ details summary{cursor:pointer;font-weight:700;color:var(--coral);min-height:32p
 .pw{position:relative;display:block}.pw input{padding-right:54px}.eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:46px;height:46px;display:grid;place-items:center;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:12px}.eye svg{width:24px;height:24px}
 #print{display:none}
 .modal{position:fixed;inset:0;background:rgb(23 19 42/.55);display:grid;place-items:center;padding:20px;z-index:40}
-.sheet{max-width:420px;width:100%}
+.sheet{max-width:440px;width:100%;max-height:calc(100dvh - 40px);overflow:auto}
+.who .out{display:inline;color:var(--coral);font-size:15px}.help{flex:none}
+.menu{display:grid;gap:8px;margin-top:var(--s2)}.menu button{min-height:52px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:16px;text-align:left;padding:0 16px;color:var(--ink)}.menu .danger{color:var(--coral)}
+.dots{min-width:44px;min-height:44px;border-radius:12px;border:2px solid var(--line);font-size:22px;font-weight:900;line-height:1;color:var(--ink);background:var(--card)}
+.orow.doubt{background:var(--warn);border-radius:12px;padding-inline:8px;border-top-color:transparent}.why{color:light-dark(#7a5500,#ffd77a);font-weight:800;font-size:13px}
+.flipbox{display:grid;gap:6px;background:var(--bg);border-radius:14px;padding:12px 14px;margin-bottom:var(--s2)}.flipbox .btn{justify-self:start}
+[data-sc].bad,#ovin.bad{border-color:var(--coral);background:var(--bad)}
+.howto details{border-top:1px solid var(--line);padding:10px 0}.howto summary{font-weight:800;font-size:16px;min-height:36px;cursor:pointer}.howto ol{margin:8px 0 8px 20px;display:grid;gap:4px}
+.tour-hl{position:relative;z-index:42!important;box-shadow:0 0 0 4px var(--gold),0 0 0 9999px rgb(23 19 42/.6)!important;border-radius:16px}
+.tour-block{position:fixed;inset:0;z-index:44}
+.tour-tip{position:fixed;left:12px;right:12px;bottom:16px;z-index:46;max-width:460px;margin:0 auto;display:grid;gap:8px}
+.tour-tip .tn{display:flex;gap:10px;align-items:center}.tour-tip .tn svg{width:52px;height:52px;flex:none}
 @media print{body>*:not(#print){display:none!important}#print{display:block}#print .cards{grid-template-columns:repeat(3,1fr);gap:10px}#print .ucard{break-inside:avoid;border:2px dashed #888;color:#2b1d3a;background:#fff}}
 </style>
 <script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
@@ -177,7 +190,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--coral);min-height:32p
 <div id="root"></div>
 <script>
 {
-const $=s=>document.querySelector(s),root=$('#root');
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],root=$('#root');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const f1=n=>n==null?'—':n.toFixed(1).replace('.',',');
 const pct=n=>isFinite(n)?Math.round(n*100)+'%':'—';
@@ -214,6 +227,7 @@ async function loadAll(){
   await Promise.all(D.classes.map(loadCourse));
 }
 const first=n=>String(n||'').split(' ')[0];
+const hello=()=>{const h=new Date().getHours();return h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches'};
 // Celular colombiano: 3001234567 -> 573001234567; si ya trae indicativo, se deja
 const waNum=p=>{let d=String(p||'').replace(/\D/g,'');if(d.length==10&&d[0]=='3')d='57'+d;return d.length>=11?d:''};
 const fmtPhone=p=>{const d=String(p||'').replace(/\D/g,'');return d.length==10?`${d.slice(0,3)} ${d.slice(3,6)} ${d.slice(6)}`:p};
@@ -240,7 +254,8 @@ const ME=()=>ME_P;
 const myClasses=()=>V.role=='admin'?D.classes.filter(c=>c.year==D.year):D.classes.filter(c=>c.year==D.year&&(ME_P.access||[]).includes(c.id));
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 function topbar(){const nm=ME_P?ME_P.name:'';return `<header class="bar"><div class="wrap"><button class="brand" data-a="home">${NUMI}<span>Numi <small>${V.role=='admin'?'Súper usuario':'Panel docente'}</small></span></button>
-<button class="btn ghost sm" data-a="refresh" title="Actualizar datos">Actualizar</button><button class="who" data-a="logout" title="Cerrar sesión"><span>${nm}</span><i class="av" style="${V.role=='admin'?'background:var(--ink)':''}">${ini(nm)}</i></button></div></header>`}
+<button class="btn ghost sm help" data-a="help">Ayuda</button><button class="who" data-a="logout" title="Salir de tu cuenta"><span>${nm}</span><i class="av" style="${V.role=='admin'?'background:var(--ink)':''}">${ini(nm)}</i><b class="out">Salir</b></button></div></header>`}
+const REFRESH=`<button class="link" data-a="refresh" style="font-size:15px">↻ Ver datos nuevos</button>`;
 
 function render(){
   if(V.screen=='login')return login();
@@ -260,6 +275,7 @@ function render(){
   else body=salon();
   root.innerHTML=topbar()+`<main class="wrap">${body}</main>`;
   syncHash();
+  if(V.screen=='home'||V.screen=='salon')setTimeout(maybeTour,400);
 }
 /* ---------- historial: el botón atrás navega dentro del panel ---------- */
 let curH='',routingH=true,GUARD=false,guardIgnore=[];
@@ -277,10 +293,15 @@ function applyHash(h){
   V.screen='home';if(V.role=='admin'&&['colegio','profesores','cursos'].includes(h))V.atab=h;
   return h=='inicio'||['colegio','profesores','cursos'].includes(h);
 }
+/* ventanas propias: más grandes y claras que las del navegador */
+function sheet(html){document.querySelector('.modal')?.remove();const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card sheet" role="dialog" aria-modal="true">${html}</div>`;document.body.appendChild(m);return m}
+function ask({title,body='',ok='Sí, continuar',cancel='Cancelar',danger=false}){return new Promise(res=>{
+  const m=sheet(`<h3>${title}</h3>${body?`<div class="muted" style="margin:8px 0 16px">${body}</div>`:'<div style="height:14px"></div>'}<div class="tools" style="margin:0"><button class="btn ${danger?'':'alt'}" data-k="ok">${ok}</button><button class="btn ghost" data-k="no">${cancel}</button></div>`);
+  const done=v=>{m.remove();res(v)};m.addEventListener('click',e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(k)done(k=='ok');else if(e.target===m)done(false)});m.querySelector('[data-k=no]').focus()})}
 let CREDMSG='';
 function showCreds(t,pw){
   const url=location.origin+location.pathname;
-  CREDMSG=`Hola ${first(t.name)}, te creamos tu cuenta en Numi, el juego de matemáticas del colegio.\n\nEntra aquí: ${url}\nCorreo: ${t.email}\nClave temporal: ${pw}\n\nAl entrar, Numi te pedirá crear tu propia contraseña.`;
+  CREDMSG=`Hola ${first(t.name)}, te creamos tu cuenta en Numi, el juego de matemáticas del colegio.\n\nEntra aquí: ${url}\nCorreo: ${t.email}\nClave temporal: ${pw}\n\nCopia y pega la clave tal cual, con los guiones y la mayúscula (la palabra del final es parte de la clave, no un dibujito).\n\nAl entrar, Numi te pedirá crear tu propia contraseña.`;
   document.querySelector('.modal')?.remove();const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="card sheet"><h3>Profesor creado</h3><p class="muted" style="margin:6px 0 12px">Envíale este mensaje a ${esc(t.name)}. La clave temporal solo se muestra ahora.</p>
   <pre style="white-space:pre-wrap;background:var(--bg);border-radius:12px;padding:12px;font:15px/1.45 Nunito,sans-serif;margin:0 0 14px">${esc(CREDMSG)}</pre>
@@ -298,7 +319,8 @@ addEventListener('hashchange',e=>{
   if(h===curH||!ME_P||['login','setup','boot','loading','noaccess','nodb'].includes(V.screen))return;
   document.querySelector('.modal')?.remove();
   if(h==='salir'){askLeave();return}
-  routingH=true;applyHash(h);render();routingH=false;scrollTo(0,0);
+  if(pending()&&!(Object.keys(saveT).length&&!scDirty()&&!Array.isArray(V.ocr))){const back=curH;okToLeave().then(ok=>{if(ok){routingH=true;applyHash(h);render();routingH=false;scrollTo(0,0)}else{curH=back;location.hash=back}});return}
+  flushSaves();routingH=true;applyHash(h);render();routingH=false;scrollTo(0,0);
 });
 addEventListener('pointerdown',()=>{
   if(GUARD||!ME_P)return;const h=location.hash.slice(1);if(!h||h==='salir')return;GUARD=true;
@@ -330,7 +352,7 @@ async function afterAuth(){
   V.screen='loading';render();
   try{
     ME_P=await DB.me();
-    if(!ME_P){const uid=DB.user()?.uid||'';await DB.logout();V.err=`Esa cuenta no tiene acceso al panel. Pide a la coordinación que te cree como profesor. (UID: ${uid})`;V.screen='login';return render()}
+    if(!ME_P){const uid=DB.user()?.uid||'';await DB.logout();V.err=`Esa cuenta no tiene acceso al panel. Pide a la coordinación que te cree como profesor.`;V.screen='login';return render()}
     V.role=ME_P.role=='admin'?'admin':'teacher';
     if(ME_P.mustChange){V.screen='newpw';V.err='';return render()}
     await loadAll();V.screen='home';routingH=true;applyHash(location.hash.slice(1));render();routingH=false;scrollTo(0,0);
@@ -341,14 +363,14 @@ function salonCard(c){const i=D.classes.indexOf(c),st=c.students,act=st.filter(s
   <div class="row3"><span><b>${st.length}</b>estudiantes</span><span><b>${act}</b>jugaron esta semana</span><span><b>${need}</b>necesitan apoyo</span></div></button>`}
 function home(){
   const t=ME_P,gs=[...new Set(myClasses().map(c=>c.grade))].sort();
-  return `<div class="head"><div><h1>Buenos días, ${t.name}</h1><p class="muted">Matemáticas · ${gs.map(g=>g+'.°').join(' y ')}</p></div></div>
+  return `<div class="head"><div><h1>${hello()}, ${esc(first(t.name))}</h1><p class="muted">Matemáticas · ${gs.map(g=>g+'.°').join(' y ')}</p></div>${REFRESH}</div>
   <div class="salones">${myClasses().map(salonCard).join('')||'<div class="card"><h3>Aún no tienes cursos asignados</h3><p class="muted" style="margin-top:6px">La coordinación te asigna los cursos desde su panel.</p></div>'}</div>`;
 }
 const TABS=[['resumen','Resumen'],['estudiantes','Estudiantes'],['notas','Planilla de notas'],['tareas','Tareas'],['usuarios','Usuarios'],['config','Configuración']];
 function salon(){
   const c=C();
   const t={resumen,estudiantes,notas,tareas,usuarios,config}[V.tab]();
-  return `<button class="back" data-a="home">‹ ${V.role=='admin'?'Panel del colegio':'Mis salones'}</button><div class="head"><h1>${c.name}</h1><p class="muted">${c.students.length} estudiantes · ${teachersOf(c.id).join(', ')||'Sin profesor'} · ${c.closed?'Año '+c.year:'Periodo 4'}</p></div>${c.closed?`<p class="note" style="background:var(--warn);border-radius:14px;padding:12px 16px;margin-bottom:var(--s2)"><b>Año ${c.year} cerrado:</b> solo consulta. Las notas quedan guardadas como historial.</p>`:''}
+  return `<button class="back" data-a="home">‹ ${V.role=='admin'?'Panel del colegio':'Mis salones'}</button><div class="head"><div><h1>${c.name}</h1><p class="muted">${c.students.length} estudiantes · ${teachersOf(c.id).join(', ')||'Sin profesor'} · ${c.closed?'Año '+c.year:'Periodo 4'}</p></div>${REFRESH}</div>${c.closed?`<p class="note" style="background:var(--warn);border-radius:14px;padding:12px 16px;margin-bottom:var(--s2)"><b>Año ${c.year} cerrado:</b> solo consulta. Las notas quedan guardadas como historial.</p>`:''}
   <nav class="tabs">${TABS.map(([k,n])=>`<button class="tab ${V.tab==k?'on':''}" data-a="tab" data-t="${k}">${n}</button>`).join('')}</nav>${t}`;
 }
 
@@ -358,7 +380,7 @@ const heat=v=>v==null?'var(--line)':v>=4.6?'light-dark(#c9efe8,#1d5048)':v>=4?'l
 const sortedCls=(y=D.year)=>D.classes.filter(c=>c.year==y).sort((a,b)=>a.grade-b.grade||a.name.localeCompare(b.name,'es'));
 function adminHome(){
   const t={colegio:aColegio,profesores:aProfes,cursos:aCursos}[V.atab]();
-  return `<div class="head"><div><h1>Panel del colegio</h1><p class="muted">Súper usuario · año lectivo ${D.year}</p></div></div>
+  return `<div class="head"><div><h1>Panel del colegio</h1><p class="muted">Súper usuario · año lectivo ${D.year}</p></div>${REFRESH}</div>
   <nav class="tabs">${ATABS.map(([k,n])=>`<button class="tab ${V.atab==k?'on':''}" data-a="atab" data-t="${k}">${n}</button>`).join('')}</nav>${t}`;
 }
 function aColegio(){
@@ -376,7 +398,7 @@ function aColegio(){
   <tr class="sub tot"><td><b>Colegio</b></td>${ISL.map((_,i)=>cell(tAvg(i))).join('')}${cell(glob)}</tr></tbody></table></div></section>
   <div class="grid g2" style="margin-top:var(--s3)"><section class="card"><h3>Promedio global por grado</h3><div class="rows">${GR.map(g=>{const v=gAvg(g);return `<div class="hrow"><span>Grado ${g}.°</span><span class="track"><i style="--c:var(--coral);width:${v?v/5*100:0}%"></i></span><em>${f1(v)}</em></div>`}).join('')}</div></section>
   <section class="card"><h3>Promedio del colegio por tema</h3><div class="rows">${ISL.map((x,i)=>{const v=tAvg(i);return `<div class="hrow"><span>${x.n}</span><span class="track"><i style="--c:${x.c};width:${v?v/5*100:0}%"></i></span><em>${f1(v)}</em></div>`}).join('')}</div></section></div>
-  <div class="tools" style="margin-top:var(--s3)"><button class="btn alt" data-a="copyall">Copiar consolidado para Excel</button></div>`;
+  <div class="tools" style="margin-top:var(--s3)"><button class="btn alt" data-a="xlsxall">Descargar consolidado en Excel</button><button class="btn ghost" data-a="copyall">Copiar la tabla</button></div>`;
 }
 function accessPicker(sel,prefix){
   return GR.map(g=>{const cs=sortedCls().filter(c=>c.grade==g),allOn=cs.every(c=>sel.includes(c.id));
@@ -457,9 +479,10 @@ function estudiantes(){
   st=[...st].sort(sorters[V.sort]);
   return `<div class="tools"><input id="q" placeholder="Buscar estudiante" value="${esc(V.q)}" aria-label="Buscar estudiante"><select id="sort" aria-label="Ordenar">
   ${[['name','Orden alfabético'],['notaD','Nota: mayor a menor'],['nota','Nota: menor a mayor'],['last','Último ingreso']].map(([k,n])=>`<option value="${k}" ${V.sort==k?'selected':''}>${n}</option>`).join('')}</select></div>
-  <table class="stack"><thead><tr><th>Estudiante</th><th>Último ingreso</th><th class="n">Retos</th><th class="n">A la primera</th><th class="n">Con error</th><th class="n">Con ayuda</th><th class="n">Nota</th></tr></thead>
+  <table class="stack"><thead><tr><th>Estudiante</th><th>Último ingreso</th><th class="n">Retos</th><th class="n">A la primera</th><th class="n">Con error</th><th class="n">Con ayuda</th><th class="n">Nota</th><th><span class="sr">Opciones</span></th></tr></thead>
   <tbody>${st.map(s=>{const c=counts(s),n=finalNota(s),d=desemp(n);return `<tr class="click" data-a="stu" data-id="${s.id}"><td><b>${esc(s.name)}</b></td><td>${ago(last(s))}</td><td class="n">${s.retos.length}</td>
-  <td class="n">${c.t?pct(c.p/c.t):'—'}</td><td class="n">${c.t?pct((c.s+c.m)/c.t):'—'}</td><td class="n">${c.t?pct(c.a/c.t):'—'}</td><td class="n"><span class="nota">${f1(n)}</span> <span class="pill ${d[1]}">${d[0]}</span></td></tr>`}).join('')}</tbody></table>
+  <td class="n">${c.t?pct(c.p/c.t):'—'}</td><td class="n">${c.t?pct((c.s+c.m)/c.t):'—'}</td><td class="n">${c.t?pct(c.a/c.t):'—'}</td><td class="n"><span class="nota">${f1(n)}</span> <span class="pill ${d[1]}">${d[0]}</span></td><td class="n"><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></td></tr>`}).join('')}</tbody></table>
+  ${st.length?'<p class="muted" style="font-size:14px;margin-top:var(--s2)">Toca a una estudiante para ver sus notas. Con los tres puntitos <b>⋮</b> puedes cambiar su clave o eliminarla si se retiró.</p>':''}
   ${st.length?'':'<p class="muted" style="margin-top:var(--s3)">No hay estudiantes con ese nombre.</p>'}`;
 }
 
@@ -470,9 +493,12 @@ function student(){
   <div class="head"><div><h1>${esc(s.name)}</h1><p class="muted">Usuario: <b>${s.user}</b> · ${C().name} · Último ingreso: ${ago(last(s))}</p></div><span class="pill ${d[1]}" style="font-size:16px;padding:6px 14px">${d[0]} · ${f1(n)}</span></div>
   <div class="kpis"><div class="kpi c1"><b>${f1(n)}</b><span>Nota final</span></div><div class="kpi c2"><b>${c.t?pct(c.p/c.t):'—'}</b><span>A la primera</span></div>
   <div class="kpi c3"><b>${s.retos.length}</b><span>Retos jugados</span></div><div class="kpi c4"><b>${c.t?pct(c.a/c.t):'—'}</b><span>Con ayuda de Numi</span></div></div>
-  <div class="grid g2"><section class="card"><h3>Notas por isla</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Puedes ajustar una nota a mano. La nota final se recalcula sola.</p>
-  <div class="isl-list">${ISL.map((x,i)=>{const rs=s.retos.filter(r=>r.isl==i),calc=rs.length?avg(rs.map(retoNota)):null,o=D.overrides[s.id+'|'+i];
-    return `<div class="isl-row"><i class="dot" style="background:${x.c}"></i><div><b>${x.n}</b><small>${rs.length} retos · calculada ${f1(calc)}</small></div><span class="override"><input type="number" min="1" max="5" step="0.1" inputmode="decimal" value="${o??''}" placeholder="${calc!=null?calc.toFixed(1).replace('.',','):'—'}" data-ov="${s.id}|${i}" aria-label="Ajustar nota de ${x.n}">${o!=null?`<button class="btn ghost sm" data-a="ovreset" data-k="${s.id}|${i}">Quitar</button>`:''}</span></div>`}).join('')}</div></section>
+  <div class="grid g2"><section class="card"><h3>Notas por isla</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Si lo necesitas, toca <b>Ajustar nota</b> para poner una nota a mano. La nota final se recalcula sola.</p>
+  <div class="isl-list">${ISL.map((x,i)=>{const rs=s.retos.filter(r=>r.isl==i),calc=rs.length?avg(rs.map(retoNota)):null,key=s.id+'|'+i,o=D.overrides[key];
+    const right=V.ovEdit==key?`<span class="override"><input id="ovin" type="text" inputmode="decimal" maxlength="4" value="${o!=null?fx1(o):calc!=null?fx1(calc):''}" placeholder="4,5" aria-label="Nota a mano para ${x.n}"><button class="btn sm alt" data-a="ovsave" data-k="${key}">Guardar</button><button class="btn sm ghost" data-a="ovcancel">Cancelar</button></span>`
+      :o!=null?`<span class="override"><b class="nota">${f1(o)}</b><span class="pill p-warn">Ajustada a mano</span>${C().closed?'':`<button class="link" data-a="ovreset" data-k="${key}" style="min-height:36px">Quitar ajuste</button>`}</span>`
+      :`<span class="override"><b class="nota">${f1(calc)}</b>${C().closed?'':`<button class="btn sm ghost" data-a="ovedit" data-k="${key}">Ajustar nota</button>`}</span>`;
+    return `<div class="isl-row"><i class="dot" style="background:${x.c}"></i><div><b>${x.n}</b><small>${rs.length} ${rs.length==1?'reto':'retos'}${o!=null?` · Numi calculó ${f1(calc)}`:''}</small></div>${right}</div>`}).join('')}</div></section>
   <section class="card"><h3>Observaciones del profesor</h3><textarea id="obs" data-id="${s.id}" placeholder="Ej.: se confunde al prestar en las restas. Reforzar con material concreto.">${esc(D.notes[s.id]||'')}</textarea>
   <p class="muted" style="font-size:14px;margin-top:6px">Se guarda solo. Solo la ven los profesores.</p>
   <h3 style="margin-top:var(--s4)">Cómo respondió</h3><div class="legend" style="margin-top:var(--s2)">${['p','s','m','a'].map(k=>`<span class="q q-${k}">${QN[k]}: ${c[k]}</span>`).join('')}</div></section></div>
@@ -487,15 +513,28 @@ function student(){
 function notas(){
   const st=C().students;
   return `<p class="muted" style="margin-bottom:var(--s2)">Nota de cada isla = promedio de sus retos. Nota final = promedio de las islas jugadas. Toca una estudiante para ajustar sus notas.</p>
-  <div class="tools"><button class="btn alt" data-a="copy">Copiar planilla para Excel</button><button class="btn ghost" data-a="csv">Descargar CSV</button></div>
+  <div class="tools"><button class="btn alt" data-a="xlsx">Descargar en Excel</button><button class="btn ghost" data-a="copy">Copiar la tabla</button></div>
   <div class="scroll"><table><thead><tr><th>Estudiante</th>${ISL.map(x=>`<th class="n">${x.n}</th>`).join('')}<th class="n">Final</th><th>Desempeño</th></tr></thead>
   <tbody>${st.map(s=>{const n=finalNota(s),d=desemp(n);return `<tr class="click" data-a="stu" data-id="${s.id}"><td style="white-space:nowrap"><b>${esc(s.name)}</b></td>${ISL.map((_,i)=>{const x=islaNota(s,i);return `<td class="n">${f1(x.v)}${x.adj?'<span class="adj">ajustada</span>':''}</td>`}).join('')}<td class="n nota">${f1(n)}</td><td><span class="pill ${d[1]}">${d[0]}</span></td></tr>`}).join('')}</tbody></table></div>`;
 }
+// Descarga un archivo de Excel (.xlsx) de verdad; si no carga la librería, baja un CSV que Excel también abre
+async function downloadExcel(rows,file,sheetName){
+  try{
+    if(!window.XLSX)await new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)});
+    const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=rows[0].map((h,i)=>({wch:Math.max(String(h).length,...rows.map(r=>String(r[i]??'').length))+2}));
+    rows.forEach((r,y)=>r.forEach((v,x)=>{if(typeof v=='number'){const c=ws[XLSX.utils.encode_cell({r:y,c:x})];if(c)c.z='0.0'}}));
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName.slice(0,31));XLSX.writeFile(wb,file+'.xlsx');
+  }catch(e){const blob=new Blob(['\ufeff'+rows.map(r=>r.map(x=>`"${String(x??'').replace('.',',').replace(/"/g,'""')}"`).join(';')).join('\n')],{type:'text/csv'});const l=document.createElement('a');l.href=URL.createObjectURL(blob);l.download=file+'.csv';l.click()}
+  toast('Listo: el archivo quedó en Descargas. Ábrelo con Excel o Google Sheets.');
+}
+const n1=v=>v==null?'':Math.round(v*10)/10;
+function planillaRows(){const rows=[['Estudiante',...ISL.map(x=>x.n),'Nota final','Desempeño']];C().students.forEach(s=>{const n=finalNota(s);rows.push([s.name,...ISL.map((_,i)=>n1(islaNota(s,i).v)),n1(n),desemp(n)[0]])});return rows}
+function consolidadoRows(){const rows=[['Curso','Profesor','Estudiante',...ISL.map(x=>x.n),'Nota final','Desempeño']];sortedCls().forEach(c=>c.students.forEach(s=>{const n=finalNota(s);rows.push([c.name,teachersOf(c.id).join(' / '),s.name,...ISL.map((_,i)=>n1(islaNota(s,i).v)),n1(n),desemp(n)[0]])}));return rows}
 function copyPlanilla(){
   const st=C().students,rows=[['Estudiante',...ISL.map(x=>x.n),'Final','Desempeño']];
   st.forEach(s=>{const n=finalNota(s);rows.push([s.name,...ISL.map((_,i)=>{const v=islaNota(s,i).v;return v==null?'':v.toFixed(1).replace('.',',')}),n==null?'':n.toFixed(1).replace('.',','),desemp(n)[0]])});
   const tsv=rows.map(r=>r.join('\t')).join('\n');
-  navigator.clipboard.writeText(tsv).then(()=>toast('Planilla copiada. Pégala en Excel o Google Sheets.'),()=>toast('No se pudo copiar en este navegador.'));
+  navigator.clipboard.writeText(tsv).then(()=>toast('Tabla copiada. Abre Excel, toca la primera casilla y pega.'),()=>toast('No se pudo copiar. Usa mejor "Descargar en Excel".'));
 }
 
 /* tareas */
@@ -520,8 +559,8 @@ function usuarios(){
   const c=C();
   let ocr='';
   if(V.ocr==='loading')ocr=`<div class="drop"><div class="spin" aria-label="Leyendo"></div><b>Numi está leyendo los nombres de la foto…</b></div>`;
-  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3>${V.aiErr?`<p class="note" style="background:var(--warn);border-radius:14px;padding:10px 14px;margin-bottom:var(--s2);font-size:14px">Esta vez no pude leer la foto tan bien como siempre. Revisa con cuidado cada nombre, o toca <b>Cancelar</b> e inténtalo de nuevo en unos minutos.</p>`:''}<p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos y quita lo que no sea un nombre.</p><button class="btn ghost sm" data-a="flip" style="margin-bottom:var(--s2)">La lista está como "Apellidos Nombres": voltear</button>
-    <div class="olist">${V.ocr.map((r,k)=>`<div class="orow"><span class="onum">${k+1}</span><div class="ofld"><input value="${esc(r.name)}" data-ocr="${k}" aria-label="Nombre ${k+1}"><small>Usuario <code>${r.user}</code> · clave <span class="pic">${r.pics.map(pic).join('')}</span></small></div><button class="link" data-a="ocrdel" data-k="${k}" aria-label="Quitar">Quitar</button></div>`).join('')}</div>
+  else if(Array.isArray(V.ocr))ocr=`<section class="card"><h3>Revisa la lista antes de crear los usuarios</h3>${V.aiErr?`<p class="note" style="background:var(--warn);border-radius:14px;padding:10px 14px;margin-bottom:var(--s2);font-size:14px">Esta vez no pude leer la foto tan bien como siempre. Revisa con cuidado cada nombre, o toca <b>Cancelar</b> e inténtalo de nuevo en unos minutos.</p>`:''}<p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Encontramos ${V.ocr.length} nombres. Corrige los que hayan quedado mal leídos y quita lo que no sea un nombre.</p>${V.ocr.length?`<div class="flipbox"><b>¿Los apellidos quedaron primero?</b><span class="muted" style="font-size:14px">Por ejemplo: «${esc(V.ocr[0].name)}» quedaría «${esc(flipName(V.ocr[0].name))}».</span><button class="btn ghost sm" data-a="flip">Poner los apellidos al final en toda la lista</button></div>`:''}${V.ocr.some((r,k)=>doubt(r.name,k))?`<p class="note" style="background:var(--warn);border-radius:14px;padding:10px 14px;margin-bottom:var(--s2);font-size:14px">Los nombres en <b>amarillo</b> parecen raros. Revísalos y corrígelos antes de crear los usuarios: el nombre sale en la tarjeta de cada niña.</p>`:''}
+    <div class="olist">${V.ocr.map((r,k)=>`<div class="orow ${doubt(r.name,k)?'doubt':''}"><span class="onum">${k+1}</span><div class="ofld"><input value="${esc(r.name)}" data-ocr="${k}" aria-label="Nombre ${k+1}" ${r.name=='Nueva Estudiante'?'placeholder="Escribe el nombre completo"':''}><small class="why">${doubt(r.name,k)?'⚠ '+doubt(r.name,k):''}</small><small>Usuario <code>${r.user}</code> · clave <span class="pic">${r.pics.map(pic).join('')}</span></small></div><button class="link" data-a="ocrdel" data-k="${k}" aria-label="Quitar">Quitar</button></div>`).join('')}</div>
     <div class="tools" style="margin-top:var(--s3)"><button class="btn ghost" data-a="ocradd">Agregar estudiante</button><button class="btn alt" data-a="ocrsave">Crear ${V.ocr.length} usuarios</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
   else if(V.ocr==='paste')ocr=`<section class="card"><h3>Escribe o pega la lista</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Un nombre por línea.</p><textarea id="plist" style="min-height:180px" placeholder="Valentina Restrepo Gómez&#10;Sofía Zapata Arango"></textarea><div class="tools" style="margin-top:var(--s2)"><button class="btn" data-a="pasteok">Revisar lista</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
   else if(V.ocr&&V.ocr.saving)ocr=`<div class="drop"><div class="spin"></div><b>Creando usuarios… ${V.ocr.done} de ${V.ocr.total}</b><span class="muted">No cierres esta página.</span></div>`;
@@ -530,9 +569,9 @@ function usuarios(){
   <section class="card"><h3>Tarjetas de ingreso de ${c.name}</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Imprímelas y entrega a cada niña la suya.</p>
   ${c.students.length?'':'<p class="muted">Cuando crees las estudiantes, aquí aparecen sus tarjetas.</p>'}<div class="cards">${c.students.slice(0,6).map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${s.user}</code><span class="muted" style="font-size:13px">Clave</span><span class="pic">${s.pics.map(pic).join('')}</span></div>`).join('')}</div>
   <div class="tools" style="margin-top:var(--s3)"><button class="btn" data-a="print" ${c.students.length?'':'disabled'}>Imprimir las ${c.students.length} tarjetas</button></div></section>
-  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Nueva clave</button> ${C().closed?'':`<button class="link" data-a="delst" data-id="${s.id}" style="color:var(--coral)">Eliminar</button>`}</td></tr>`).join('')}</tbody></table>
-  ${!c.closed&&c.students.length?(canWipe(c)?`<div style="margin-top:var(--s3);padding-top:var(--s2);border-top:1px solid var(--line)"><b>¿Te equivocaste de listado?</b><p class="muted" style="font-size:14px;margin:4px 0 var(--s2)">Como ninguna estudiante ha entrado ni tiene notas, puedes borrar todo el listado y volver a subir la foto correcta.</p><button class="btn ghost" style="color:var(--coral)" data-a="wipe">Eliminar las ${c.students.length} estudiantes</button></div>`
-    :`<p class="muted" style="font-size:13px;margin-top:var(--s3)">El listado completo ya no se puede borrar porque algunas estudiantes ya entraron o tienen notas. Puedes eliminarlas una por una.</p>`):''}</details></section></div>
+  <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><table class="stack" style="margin-top:var(--s2)"><thead><tr><th>Nombre</th><th>Usuario</th><th>Clave</th><th></th></tr></thead><tbody>${c.students.map(s=>`<tr><td>${esc(s.name)}</td><td><code>${s.user}</code></td><td><span class="pic">${s.pics.map(pic).join('')}</span></td><td><button class="link" data-a="reset" data-id="${s.id}">Cambiar clave</button> ${C().closed?'':`<button class="link" data-a="delst" data-id="${s.id}" style="color:var(--coral)">Eliminar</button>`}</td></tr>`).join('')}</tbody></table>
+  ${!c.closed&&c.students.length&&!canWipe(c)?`<p class="muted" style="font-size:13px;margin-top:var(--s3)">El listado completo ya no se puede borrar porque algunas estudiantes ya entraron o tienen notas. Puedes eliminarlas una por una con <b>Eliminar</b>.</p>`:''}</details></section>
+  ${!c.closed&&c.students.length&&canWipe(c)&&!Array.isArray(V.ocr)?`<section class="card"><h3>¿Te equivocaste de listado?</h3><p class="muted" style="font-size:14px;margin:4px 0 var(--s2)">Como ninguna estudiante ha entrado ni tiene notas, puedes borrar todo el listado y volver a subir la foto correcta.</p><button class="btn ghost" style="color:var(--coral)" data-a="wipe">Eliminar las ${c.students.length} estudiantes</button></section>`:''}</div>
   <section class="card" style="align-self:start"><h3>Así entra la niña</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Escribe su usuario y toca sus 3 dibujitos en orden. Es más fácil que una contraseña a esta edad.</p>
   <div class="phone"><svg viewBox="0 0 120 120" style="width:80px;margin:0 auto"><use href="#numi"/></svg><b style="font-family:Fredoka;font-size:22px">¡Hola! ¿Quién eres?</b><input value="${c.students[0]?.user||'valentina.res'}" aria-label="Usuario de ejemplo" readonly>
   <span style="font-weight:700;font-size:14px">Toca tus 3 dibujitos</span><div class="picks">${PICS.map(k=>`<span class="${(c.students[0]?.pics||['estrella','luna','flor']).includes(k)?'on':''}">${pic(k)}</span>`).join('')}</div>
@@ -540,20 +579,112 @@ function usuarios(){
 }
 
 /* configuración */
+const SCROWS=[['p','A la primera','Respondió bien en el primer intento.'],['s','Al segundo intento','Se equivocó una vez y corrigió.'],['m','Con tres o más intentos','Necesitó varios intentos, sin ayuda.'],['a','Con la ayuda paso a paso','Numi le explicó el procedimiento.']];
+const scNow=()=>V.scd||C().scale;
+const scDirty=()=>!!V.scd&&C()&&['p','s','m','a','alert'].some(k=>V.scd[k]!==C().scale[k]);
+const fx1=v=>v==null?'—':v.toFixed(1).replace('.',',');
+function scBar(){const d=scDirty();return d?`<p class="note" style="background:var(--warn);border-radius:14px;padding:10px 14px;margin:var(--s3) 0 0;font-size:14px"><b>Tienes cambios sin guardar.</b> Las notas no cambian hasta que toques <b>Guardar escala</b>.</p><div class="tools" style="margin-top:var(--s2)"><button class="btn alt" data-a="scsave">Guardar escala</button><button class="btn ghost" data-a="scundo">Descartar cambios</button></div>`:''}
+function scRefresh(){const sc=scNow(),ex=$('#ex');if(ex)ex.textContent=f1((3*sc.p+sc.s+sc.a)/5);const bar=$('#scbar');if(bar)bar.innerHTML=scBar()}
 function config(){
-  const rows=[['p','A la primera','Respondió bien en el primer intento.'],['s','Al segundo intento','Se equivocó una vez y corrigió.'],['m','Con tres o más intentos','Necesitó varios intentos, sin ayuda.'],['a','Con la ayuda paso a paso','Numi le explicó el procedimiento.']];
-  return `<div class="grid g2"><section class="card"><h3>Escala de notas por pregunta</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Cambia los valores cuando quieras. Todas las notas se recalculan solas al instante.</p>
-  <div class="scale">${rows.map(([k,t,d])=>`<div class="srow"><div><b>${t}</b><small>${d}</small></div><input type="number" min="1" max="5" step="0.1" inputmode="decimal" value="${C().scale[k]}" data-sc="${k}" aria-label="${t}"></div>`).join('')}</div>
+  const sc=scNow(),cl=C().closed;
+  return `<div class="grid g2"><section class="card"><h3>Escala de notas por pregunta</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Escribe el valor nuevo y toca <b>Guardar escala</b>. Al guardar, las notas de todo el salón se recalculan.</p>
+  <div class="scale">${SCROWS.map(([k,t,d])=>`<div class="srow"><div><b>${t}</b><small>${d}</small></div><input type="text" inputmode="decimal" maxlength="4" value="${fx1(sc[k])}" data-sc="${k}" aria-label="${t}" ${cl?'disabled':''}></div>`).join('')}</div>
   <p class="muted" style="font-size:14px;margin-top:var(--s2)">Nota de cada reto = promedio de sus 5 preguntas. Esta escala aplica a ${esc(C().name)}.</p></section>
-  <section class="card"><h3>Alertas</h3><div class="srow" style="border:0"><div><b>Avisarme si la nota baja de</b><small>Aparece en "Necesitan apoyo" del resumen.</small></div><input type="number" min="1" max="5" step="0.1" value="${C().scale.alert}" data-sc="alert" aria-label="Nota mínima para alerta"></div>
-  <h3 style="margin-top:var(--s4)">Ejemplo con la escala actual</h3><p style="margin-top:6px">Un reto con 3 a la primera, 1 al segundo intento y 1 con ayuda:</p>
-  <p class="nota" style="font-size:30px;color:var(--coral)" id="ex">${f1((3*C().scale.p+C().scale.s+C().scale.a)/5)}</p>
-  <button class="btn ghost" data-a="screset" style="margin-top:var(--s3)">Volver a los valores iniciales</button></section></div>`;
+  <section class="card"><h3>Alertas</h3><div class="srow" style="border:0"><div><b>Avisarme si la nota baja de</b><small>Aparece en "Necesitan apoyo" del resumen.</small></div><input type="text" inputmode="decimal" maxlength="4" value="${fx1(sc.alert)}" data-sc="alert" aria-label="Nota mínima para alerta" ${cl?'disabled':''}></div>
+  <h3 style="margin-top:var(--s4)">Ejemplo con esta escala</h3><p style="margin-top:6px">Un reto con 3 a la primera, 1 al segundo intento y 1 con ayuda:</p>
+  <p class="nota" style="font-size:30px;color:var(--coral)" id="ex">${f1((3*sc.p+sc.s+sc.a)/5)}</p>
+  <div id="scbar">${scBar()}</div>
+  ${cl?'':`<button class="link" data-a="screset" style="margin-top:var(--s2)">Volver a la escala original de Numi</button>`}</section></div>`;
 }
 
+/* ---------- recorrido de la primera vez ---------- */
+let TOURON=false;
+const TS={refresh:{sel:'[data-a=refresh]',t:'Ver datos nuevos',d:'Si las niñas están jugando en este momento, toca aquí para ver sus notas recién hechas.'},
+  help:{sel:'.help',t:'Ayuda',d:'Si no sabes cómo hacer algo, toca aquí: están los pasos de lo más común. También puedes repetir este recorrido.'},
+  who:{sel:'.who',t:'Salir',d:'Cuando termines, toca aquí para cerrar tu cuenta.'}};
+const TOURS={
+  home:()=>[{t:`¡Hola, ${esc(first(ME_P.name))}! Te muestro el panel`,d:'Son unos pasos cortos. Puedes saltarlos y verlos después desde el botón Ayuda.'},
+    V.role=='admin'?{sel:'.tabs',t:'Las secciones del colegio',d:'Colegio: los promedios de todos los cursos. Profesores: crearlos y darles acceso. Cursos: los cursos de cada año.'}
+      :{sel:'.salones',t:'Tus salones',d:'Aquí están los cursos que te asignaron. Toca uno para ver a sus estudiantes y sus notas.'},TS.refresh,TS.help,TS.who],
+  salon:()=>[{sel:'.tabs',t:'Las secciones del salón',d:'Toca la que necesites. Todas están aquí a la vista.'},
+    {sel:'[data-t=usuarios]',t:'Usuarios: la lista y las tarjetas',d:'Aquí tomas la foto de la lista del salón para crear los usuarios de las niñas, y aquí imprimes sus tarjetas de ingreso.'},
+    {sel:'[data-t=estudiantes]',t:'Estudiantes',d:'Toca a una niña para ver sus notas. Con los tres puntitos ⋮ cambias su clave o la eliminas si se retiró.'},
+    {sel:'[data-t=notas]',t:'Planilla de notas',d:'Todas las notas del salón. Desde aquí las descargas en Excel.'},
+    {sel:'[data-t=config]',t:'Configuración',d:'La escala de notas. Si cambias algo, toca Guardar escala para que se aplique.'}]};
+const tourKey=n=>'numi-tour-'+n+'-'+(ME_P?.uid||'');
+function tourSeen(n){try{return localStorage.getItem(tourKey(n))=='1'}catch(e){return false}}
+function tourMark(n){try{localStorage.setItem(tourKey(n),'1')}catch(e){}}
+function maybeTour(){if(TOURON||$('.modal')||!ME_P)return;const n=V.screen=='home'?'home':V.screen=='salon'?'salon':null;if(n&&!tourSeen(n))tour(n)}
+function tour(n){
+  const steps=TOURS[n]().filter(x=>!x.sel||$(x.sel));if(!steps.length)return;TOURON=true;tourMark(n);let i=0;
+  const blk=document.createElement('div');blk.className='tour-block';const tip=document.createElement('div');tip.className='card tour-tip';tip.setAttribute('role','dialog');tip.setAttribute('aria-live','polite');document.body.append(blk,tip);
+  const clear=()=>$$('.tour-hl').forEach(e=>e.classList.remove('tour-hl'));
+  const end=()=>{clear();blk.remove();tip.remove();TOURON=false};
+  const show=()=>{clear();const st=steps[i],el=st.sel&&$(st.sel);
+    if(el){el.classList.add('tour-hl');el.scrollIntoView({block:'center'})}
+    blk.style.background=el?'transparent':'rgb(23 19 42/.6)';
+    tip.innerHTML=`<div class="tn">${NUMI}<div><b style="font-family:Fredoka,sans-serif;font-size:19px">${st.t}</b><div class="muted" style="font-size:13px">Paso ${i+1} de ${steps.length}</div></div></div><p style="margin:0">${st.d}</p><div class="tools" style="margin:4px 0 0"><button class="btn" data-k="next">${i==steps.length-1?'¡Entendido!':'Siguiente'}</button>${i<steps.length-1?'<button class="btn ghost" data-k="skip">Saltar</button>':''}</div>`;
+    tip.querySelector('[data-k=next]').focus()};
+  tip.addEventListener('click',e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(k=='next'){i++;i<steps.length?show():end()}else if(k=='skip')end()});
+  show();
+}
+
+/* ---------- ¿Cómo hago…? ---------- */
+const HOWTO=[
+  {t:'Crear la lista de mi salón',go:'usuarios',s:['Abre tu salón.','Toca la sección <b>Usuarios</b>.','Toca <b>Tomar foto</b> y tómale una foto a la lista del salón, con buena luz.','Revisa los nombres. Los que salen en amarillo parecen raros: corrígelos.','Toca <b>Crear usuarios</b>.']},
+  {t:'Imprimir las tarjetas de ingreso',go:'usuarios',s:['Abre tu salón y toca <b>Usuarios</b>.','Toca <b>Imprimir las tarjetas</b>.','Entrega a cada niña la suya: tiene su usuario y sus 3 dibujitos.']},
+  {t:'Ver o descargar las notas',go:'notas',s:['Abre tu salón y toca <b>Planilla de notas</b>.','Toca <b>Descargar en Excel</b>. El archivo queda en Descargas.']},
+  {t:'Una niña olvidó su clave',go:'usuarios',s:['Abre tu salón y toca <b>Usuarios</b>.','Abre <b>Estudiantes con usuario</b>: ahí están el usuario y los dibujitos de cada niña.','No hace falta cambiarla. Si quieres darle una nueva, toca <b>Cambiar clave</b> e imprímele la tarjeta.']},
+  {t:'Una niña se retiró del colegio',go:'estudiantes',s:['Abre tu salón y toca <b>Estudiantes</b>.','Toca los tres puntitos <b>⋮</b> junto a su nombre.','Toca <b>Eliminar estudiante</b> y confirma. Deja de contar en los promedios.']},
+  {t:'Me equivoqué de listado',go:'usuarios',s:['Abre tu salón y toca <b>Usuarios</b>.','Si ninguna niña ha jugado todavía, verás <b>¿Te equivocaste de listado?</b>','Toca <b>Eliminar las estudiantes</b> y vuelve a tomar la foto correcta.']},
+  {t:'Poner una nota a mano',go:'estudiantes',s:['Abre tu salón, toca <b>Estudiantes</b> y toca a la niña.','En <b>Notas por isla</b>, toca <b>Ajustar nota</b>.','Escribe la nota (de 1,0 a 5,0) y toca <b>Guardar</b>.']},
+  {t:'Dejarles una tarea a las niñas',go:'tareas',s:['Abre tu salón y toca <b>Tareas</b>.','Elige la isla, el nivel y la fecha límite.','Toca <b>Asignar</b>. Las niñas la ven en su mapa.']}];
+const HOWTO_ADMIN=[
+  {t:'Crear un profesor',atab:'profesores',s:['Toca <b>Profesores</b>.','Escribe su nombre, correo y celular, y elige sus cursos.','Toca <b>Crear profesor</b> y envíale el mensaje por WhatsApp.']},
+  {t:'Crear los cursos del año',atab:'cursos',s:['Toca <b>Cursos</b>.','Elige el grado y el año, y revisa el nombre y los profesores.','Toca <b>Crear curso</b>.']}];
+function showHelp(){
+  const list=[...(V.role=='admin'?HOWTO_ADMIN:[]),...HOWTO];
+  const m=sheet(`<h3>¿Cómo hago…?</h3><p class="muted" style="font-size:14px;margin:4px 0 6px">Toca una pregunta para ver los pasos.</p><div class="howto">${list.map((h,k)=>`<details><summary>${h.t}</summary><ol>${h.s.map(x=>`<li>${x}</li>`).join('')}</ol><button class="btn sm alt" data-k="go" data-i="${k}">Llévame ahí</button></details>`).join('')}</div><div class="tools" style="margin:var(--s2) 0 0"><button class="btn ghost" data-k="tour">Ver el recorrido otra vez</button><button class="btn ghost" data-k="x">Cerrar</button></div>`);
+  m.addEventListener('click',async e=>{const el=e.target.closest('[data-k]'),k=el?.dataset.k;if(!k){if(e.target===m)m.remove();return}
+    m.remove();if(k=='tour'){tour(V.screen=='salon'?'salon':'home');return}
+    if(k!='go')return;const h=list[+el.dataset.i];if(!await okToLeave())return;
+    if(h.atab){V.screen='home';V.atab=h.atab;render();scrollTo(0,0);return}
+    if(V.screen=='home'){const mine=myClasses();if(mine.length!=1){toast('Primero toca el salón que quieres. Luego vuelve a Ayuda.');return}V.cls=D.classes.indexOf(mine[0])}
+    V.screen='salon';V.tab=h.go;render();scrollTo(0,0)});
+}
+
+/* ---------- datos nuevos sin perder la pantalla ---------- */
+async function refreshData(silent){
+  const cid=C()?.id,scr=V.screen,stu=V.student,y=scrollY;
+  if(!silent){V.screen='loading';render()}
+  await loadAll();const i=D.classes.findIndex(c=>c.id==cid);if(i>=0)V.cls=i;
+  V.screen=scr=='student'&&i>=0&&D.classes[i].students.some(x=>x.id==stu)?'student':scr=='salon'&&i>=0?'salon':'home';
+  render();if(silent)scrollTo(0,y);else toast('Listo, ya ves los datos más recientes.');
+}
+let hiddenAt=0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){hiddenAt=Date.now();flushSaves();return}
+  // Al volver al panel después de un rato, trae los datos nuevos solo (si no hay nada a medias)
+  if(ME_P&&hiddenAt&&Date.now()-hiddenAt>5*60e3&&['home','salon','student'].includes(V.screen)&&!pending()&&!$('.modal')&&!TOURON)refreshData(true).catch(()=>{});
+});
+
+/* ---------- cambios a medias ---------- */
+function flushSaves(){for(const k of Object.keys(saveT)){const x=saveT[k];clearTimeout(x.t);delete saveT[k];x.fn().catch(fail)}}
+const pending=()=>Array.isArray(V.ocr)&&V.ocr.length>0||!!(V.ocr&&V.ocr.saving)||scDirty()||Object.keys(saveT).length>0;
+async function okToLeave(){
+  flushSaves();
+  if(V.ocr&&V.ocr.saving){toast('Espera a que terminen de crearse los usuarios.');return false}
+  if(Array.isArray(V.ocr)&&V.ocr.length){if(!await ask({title:'Tienes una lista sin crear',body:`Los ${V.ocr.length} nombres que estás revisando todavía no tienen usuario. Si sales, tendrás que subir la foto otra vez.`,ok:'Salir sin crear',cancel:'Quedarme',danger:true}))return false;V.ocr=null}
+  if(scDirty()){if(!await ask({title:'No guardaste la escala',body:'Cambiaste valores de la escala de notas pero no tocaste <b>Guardar escala</b>.',ok:'Salir sin guardar',cancel:'Quedarme',danger:true}))return false}
+  V.scd=null;V.ovEdit=null;return true;
+}
+addEventListener('beforeunload',e=>{const p=Array.isArray(V.ocr)&&V.ocr.length>0||!!(V.ocr&&V.ocr.saving)||scDirty();flushSaves();if(p){e.preventDefault();e.returnValue=''}});
+
 /* ---------- eventos ---------- */
-let saveT={};
-const later=(k,fn,ms=700)=>{clearTimeout(saveT[k]);saveT[k]=setTimeout(()=>fn().catch(fail),ms)};
+let saveT={},BUSY=false;
+// Acciones que tardan: mientras trabajan, el botón queda bloqueado y no se repiten con doble toque
+const SLOW=new Set(['ocrsave','reset','wipe','delst','addtask','deltask','scsave','screset','ovsave','ovreset','refresh','logout','ntsave','etdone','etdel','ncsave','copyyear','ecsave','ecdel','xlsx','xlsxall','forgot']);
+const later=(k,fn,ms=700)=>{clearTimeout(saveT[k]?.t);saveT[k]={fn,t:setTimeout(()=>{delete saveT[k];fn().catch(fail)},ms)}};
 function noteSave(sid){const c=C(),ov={};ISL.forEach((_,i)=>{const v=D.overrides[sid+'|'+i];if(v!=null)ov[i]=v});return DB.setNote(sid,c.id,{obs:D.notes[sid]||'',ov})}
 function cardsHTML(list){return list.map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${esc(s.user)}</code><span class="muted" style="font-size:13px">Clave: toca en orden</span><span class="pic">${s.pics.map(pic).join('')}</span><span class="muted" style="font-size:12px">${location.host}${location.pathname.replace('docente.html','')}</span></div>`).join('')}
 function printCards(list){let p=$('#print');if(!p){p=document.createElement('div');p.id='print';document.body.appendChild(p)}p.innerHTML=`<div class="cards">${cardsHTML(list)}</div>`;setTimeout(()=>window.print(),100)}
@@ -648,55 +779,84 @@ document.addEventListener('submit',async e=>{if(e.target.id!='lf')return;e.preve
   try{await DB.staffLogin(V.email,pw);V.busy=false;await afterAuth()}catch(err){V.busy=false;V.err=DB.message(err);login()}});
 document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  const lock=SLOW.has(a);if(lock){if(BUSY){toast('Espera un momento, Numi está terminando…');return}BUSY=true;b.disabled=true;b.setAttribute('aria-busy','true')}
   try{
+  if(['home','tab','tabback','stu','cls','atab'].includes(a)&&!(a=='tab'&&V.tab==b.dataset.t)&&!await okToLeave())return;
   if(a=='home'){V.screen='home';render();scrollTo(0,0)}
-  else if(a=='logout'){await DB.logout();ME_P=null;D.classes=[];V.screen='login';V.err='';render()}
+  else if(a=='logout'){if(V.screen=='noaccess'||V.screen=='login'){await DB.logout();ME_P=null;V.screen='login';V.err='';return render()}
+    if(!await okToLeave())return;if(!await ask({title:'¿Salir de tu cuenta?',body:'Todo lo que hiciste queda guardado. Para volver a entrar necesitas tu correo y tu contraseña.',ok:'Sí, salir',cancel:'Seguir en el panel'}))return;
+    await DB.logout();ME_P=null;D.classes=[];V.screen='login';V.err='';render()}
   else if(a=='setup'){V.screen='setup';V.err='';render()}
   else if(a=='tologin'){V.screen='login';V.err='';render()}
   else if(a=='stayapp'){document.querySelector('.modal')?.remove();curH=navHash();location.hash=curH}
   else if(a=='leaveapp'){document.querySelector('.modal')?.remove();history.back()}
   else if(a=='forgot'){const em=$('#em').value.trim();if(!em){V.err='Escribe tu correo y vuelve a tocar "Olvidé mi contraseña".';return login()}await DB.resetPassword(em);V.err='';login();toast('Te enviamos un correo para crear una contraseña nueva.')}
-  else if(a=='refresh'){V.screen='loading';render();await loadAll();V.screen=V.screen=='loading'?'home':V.screen;V.screen='home';render();toast('Datos actualizados.')}
+  else if(a=='refresh'){if(!await okToLeave())return;await refreshData(false)}
   else if(a=='cls'){V.cls=+b.dataset.i;V.screen='salon';V.tab='resumen';V.ocr=null;render();scrollTo(0,0)}
-  else if(a=='tab'){V.tab=b.dataset.t;render()}
+  else if(a=='tab'){V.tab=b.dataset.t;render();$('.tabs')?.scrollIntoView({block:'nearest'})}
   else if(a=='tabback'){V.screen='salon';V.tab='estudiantes';render();scrollTo(0,0)}
   else if(a=='stu'){V.student=b.dataset.id;V.screen='student';render();scrollTo(0,0)}
   else if(a=='atab'){V.atab=b.dataset.t;V.editT=null;EC=null;render()}
   else if(a=='copyall')copyAll();
-  else if(a=='ovreset'){delete D.overrides[b.dataset.k];render();await noteSave(b.dataset.k.split('|')[0]);toast('Se quitó el ajuste. Vuelve la nota calculada.')}
+  else if(a=='help')showHelp();
+  else if(a=='ovedit'){V.ovEdit=b.dataset.k;render();const i=$('#ovin');if(i){i.focus();i.select()}}
+  else if(a=='ovcancel'){V.ovEdit=null;render()}
+  else if(a=='ovsave'){const k=b.dataset.k,raw=$('#ovin').value.trim(),v=parseFloat(raw.replace(',','.'));if(!(v>=1&&v<=5)){toast('Escribe una nota entre 1,0 y 5,0.');$('#ovin').focus();return}
+    D.overrides[k]=Math.round(v*10)/10;V.ovEdit=null;render();await noteSave(k.split('|')[0]);toast(`Listo: ${ISL[+k.split('|')[1]].n} quedó en ${fx1(D.overrides[k])}, marcada como ajustada a mano.`)}
+  else if(a=='ovreset'){const k=b.dataset.k;delete D.overrides[k];render();await noteSave(k.split('|')[0]);toast('Se quitó el ajuste. Volvió la nota que calculó Numi.')}
   else if(a=='copy')copyPlanilla();
-  else if(a=='csv'){const st=C().students,rows=[['Estudiante',...ISL.map(x=>x.n),'Final','Desempeño']],fx=v=>v==null?'':v.toFixed(1).replace('.',',');st.forEach(s=>{const n=finalNota(s);rows.push([s.name,...ISL.map((_,i)=>fx(islaNota(s,i).v)),fx(n),desemp(n)[0]])});
-    const blob=new Blob(['\ufeff'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n')],{type:'text/csv'});const l=document.createElement('a');l.href=URL.createObjectURL(blob);l.download=`notas-${slug(C().name)}-${C().year}.csv`;l.click()}
+  else if(a=='xlsx'){await downloadExcel(planillaRows(),`notas-${C().name.replace(/[^0-9A-Za-z]/g,"")}-${C().year}`,'Notas '+C().name)}
+  else if(a=='xlsxall'){await downloadExcel(consolidadoRows(),`consolidado-notas-${D.year}`,'Consolidado '+D.year)}
   else if(a=='addtask'){const d={courseId:C().id,isl:+$('#ti').value,lvl:+$('#tl').value,due:new Date($('#td').value+'T23:59').getTime(),created:Date.now()};const id=await DB.createTask(d);C().tasks.unshift({id,...d});render();toast('Tarea asignada. Las niñas la verán en su mapa.')}
   else if(a=='deltask'){const t=C().tasks[+b.dataset.k];await DB.deleteTask(t.id);C().tasks.splice(+b.dataset.k,1);render()}
   else if(a=='phcam'||a=='phgal'){picker(a=='phcam').click()}
   else if(a=='paste'){V.ocr='paste';render()}
   else if(a=='pasteok'){const names=parseNames($('#plist').value);if(!names.length){toast('Escribe al menos un nombre completo por línea.');return}V.ocr=uniqUsers(names.map(mkUser));render()}
   else if(a=='ocrcancel'){V.ocr=null;render()}
-  else if(a=='flip'){V.ocr=uniqUsers(V.ocr.map(r=>{const w=r.name.split(' ');const k=w.length>=4?2:w.length==3?2:1;return{...mkUser([...w.slice(k),...w.slice(0,k)].join(' ')),pics:r.pics}}));render()}
+  else if(a=='flip'){V.ocr=uniqUsers(V.ocr.map(r=>({...mkUser(flipName(r.name)),pics:r.pics})));render();toast('Listo: los apellidos quedaron al final. Revisa que se vean bien.')}
   else if(a=='ocrdel'){V.ocr.splice(+b.dataset.k,1);render()}
-  else if(a=='ocradd'){V.ocr.push(mkUser('Nueva Estudiante'));render()}
-  else if(a=='ocrsave'){if(!V.ocr.length)return;await saveStudents()}
+  else if(a=='ocradd'){V.ocr.push({...mkUser('Nueva Estudiante'),name:''});render();const ins=$$('[data-ocr]');ins[ins.length-1]?.focus()}
+  else if(a=='ocrsave'){if(!V.ocr.length)return;
+    if(V.ocr.some(r=>!r.name.trim())){toast('Hay una fila sin nombre. Escríbelo o toca Quitar.');$$('[data-ocr]').find(i=>!i.value.trim())?.focus();return}
+    const nd=V.ocr.filter((r,k)=>doubt(r.name,k)).length;
+    if(!await ask({title:`¿Crear ${V.ocr.length} usuarios para ${esc(C().name)}?`,body:nd?`<b>${nd} ${nd==1?'nombre está marcado':'nombres están marcados'} en amarillo</b> porque ${nd==1?'parece raro':'parecen raros'}. El nombre sale en la tarjeta de cada niña, así que conviene corregirlos antes.`:'Revisa que los nombres estén bien escritos: salen en la tarjeta de cada niña.',ok:nd?'Crear de todas formas':'Sí, crear usuarios',cancel:'Volver a revisar',danger:!!nd})){$('.orow.doubt input')?.focus();return}
+    await saveStudents()}
   else if(a=='print'){printCards(C().students)}
-  else if(a=='reset'){const s=C().students.find(x=>x.id==b.dataset.id),np=[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)]);await DB.changeStudentPics(s,np);s.pics=np;render();toast('Nueva clave para '+s.name.split(' ')[0]+'. Imprime su tarjeta otra vez.')}
+  else if(a=='reset'){const s=C().students.find(x=>x.id==b.dataset.id);if(!s)return;
+    if(!await ask({title:`¿Cambiar la clave de ${esc(first(s.name))}?`,body:`Su clave de ahora <span class="pic">${s.pics.map(pic).join('')}</span> dejará de funcionar y <b>su tarjeta impresa ya no servirá</b>. Tendrás que imprimirle una nueva.<br><br>Si solo quieres ver su clave, está en la lista de Usuarios: no hace falta cambiarla.`,ok:'Sí, cambiar la clave',cancel:'No, dejarla igual'}))return;
+    let np;do{np=[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)])}while(np.join()==s.pics.join());
+    await DB.changeStudentPics(s,np);s.pics=np;render();
+    const m=sheet(`<h3>Nueva clave de ${esc(first(s.name))}</h3><p class="muted" style="margin:6px 0 12px">Imprímele esta tarjeta y bota la anterior.</p><div class="cards" style="grid-template-columns:1fr">${cardsHTML([s])}</div><div class="tools" style="margin:14px 0 0"><button class="btn" data-k="print">Imprimir su tarjeta</button><button class="btn ghost" data-k="x">Listo</button></div>`);
+    m.addEventListener('click',e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(k=='print')printCards([s]);else if(k=='x'||e.target===m)m.remove()})}
   else if(a=='wipe'){const c=C();if(!canWipe(c)){toast('Ya no se puede: alguna estudiante entró o tiene notas.');render();return}
-    if(!confirm(`¿Eliminar las ${c.students.length} estudiantes de ${c.name}?\n\nSe borran sus usuarios y claves, y las tarjetas impresas dejan de servir. Después puedes subir la foto del listado correcto.`))return;
+    if(!await ask({title:`¿Eliminar las ${c.students.length} estudiantes de ${esc(c.name)}?`,body:'Se borran sus usuarios y claves, y las tarjetas impresas dejan de servir. Después puedes subir la foto del listado correcto.',ok:'Sí, borrar el listado',cancel:'No, dejarlo',danger:true}))return;
     const all=[...c.students];let k=0,bad=0;b.disabled=true;
     for(const s of all){b.textContent=`Eliminando… ${++k} de ${all.length}`;try{await DB.removeStudent(s);c.students=c.students.filter(x=>x.id!=s.id)}catch(e){bad++;console.error(e)}}
     render();toast(bad?`Se eliminaron ${all.length-bad} estudiantes. ${bad} no se pudieron eliminar; inténtalo otra vez.`:'Listo, se borró el listado. Ya puedes subir la foto correcta.')}
+  else if(a=='stumenu'){const s=C().students.find(x=>x.id==b.dataset.id);if(!s)return;
+    const m=sheet(`<h3>${esc(s.name)}</h3><p class="muted" style="font-size:14px;margin-top:4px">Usuario <b>${esc(s.user)}</b> · clave <span class="pic">${s.pics.map(pic).join('')}</span></p><div class="menu"><button data-k="ver">Ver sus notas y su historial</button><button data-k="print">Imprimir su tarjeta de ingreso</button>${C().closed?'':`<button data-k="clave">Cambiar su clave (dibujitos)</button><button data-k="del" class="danger">Eliminar estudiante (se retiró)</button>`}<button data-k="x">Cerrar</button></div>`);
+    m.addEventListener('click',e=>{const k=e.target.closest('[data-k]')?.dataset.k;if(!k&&e.target!==m)return;m.remove();
+      if(k=='ver'){V.student=s.id;V.screen='student';render();scrollTo(0,0)}else if(k=='print')printCards([s]);else if(k=='clave')fire('reset',s.id);else if(k=='del')fire('delst',s.id)})}
   else if(a=='delst'){const s=C().students.find(x=>x.id==b.dataset.id);if(!s)return;
-    if(!confirm(`¿Eliminar a ${s.name} del todo?\n\n• Ya no podrá entrar a Numi.\n• Se borran sus ${s.retos.length} retos, sus notas y observaciones.\n• Deja de contar en los promedios del salón.\n\nEsto no se puede deshacer.`))return;
-    b.disabled=true;b.textContent='Eliminando…';clearTimeout(saveT['obs'+s.id]);
+    if(!await ask({title:`¿Eliminar a ${esc(s.name)}?`,body:`<ul style="margin:0 0 10px 18px"><li>Ya no podrá entrar a Numi.</li><li>Se borran sus ${s.retos.length} retos, sus notas y observaciones.</li><li>Deja de contar en los promedios del salón.</li></ul><b>Esto no se puede deshacer.</b> Úsalo solo si la niña se retiró.`,ok:'Sí, eliminarla',cancel:'No, dejarla',danger:true}))return;
+    b.disabled=true;b.textContent='Eliminando…';clearTimeout(saveT['obs'+s.id]?.t);delete saveT['obs'+s.id];
     const r=await DB.removeStudent(s);
     C().students=C().students.filter(x=>x.id!=s.id);delete D.notes[s.id];ISL.forEach((_,i)=>delete D.overrides[s.id+'|'+i]);
     if(V.screen=='student'){V.screen='salon';V.tab='estudiantes';V.student=null;scrollTo(0,0)}
     render();toast(r.resultsBlocked?`${s.name.split(' ')[0]} fue eliminada y ya no cuenta en los promedios.`:`${s.name.split(' ')[0]} fue eliminada del todo.`)}
-  else if(a=='screset'){C().scale={...DEF_SCALE};render();await DB.setScale(C().id,C().scale);toast('Escala restablecida.')}
+  else if(a=='scsave'){if($$('[data-sc].bad').length){toast('Hay un valor que no es válido: cada nota debe estar entre 1,0 y 5,0.');return}
+    const old=C().scale,nw=V.scd,names={p:'A la primera',s:'Al segundo intento',m:'Con tres o más intentos',a:'Con ayuda',alert:'Alerta si baja de'};
+    const ch=Object.keys(names).filter(k=>nw[k]!==old[k]).map(k=>`<li>${names[k]}: ${fx1(old[k])} → <b>${fx1(nw[k])}</b></li>`).join('');
+    if(!await ask({title:'¿Guardar la escala nueva?',body:`<ul style="margin:0 0 10px 18px">${ch}</ul>Las notas de las ${C().students.length} estudiantes de ${esc(C().name)} se recalculan con estos valores.`,ok:'Sí, guardar'}))return;
+    C().scale={...nw};V.scd=null;await DB.setScale(C().id,C().scale);render();toast('Escala guardada. Las notas se recalcularon.')}
+  else if(a=='scundo'){V.scd=null;render();toast('Cambios descartados. La escala quedó como estaba.')}
+  else if(a=='screset'){if(!await ask({title:'¿Volver a la escala original?',body:`Queda así: a la primera 5,0 · segundo intento 4,0 · tres o más intentos 3,5 · con ayuda 3,0 · alerta si baja de ${fx1(DEF_SCALE.alert)}. Las notas del salón se recalculan.`,ok:'Sí, volver a la original'}))return;
+    V.scd=null;C().scale={...DEF_SCALE};await DB.setScale(C().id,C().scale);render();toast('Escala original restablecida.')}
   /* súper usuario: profesores */
   else if(a=='ntg'||a=='ntc'){NT.name=$('#ntn').value;NT.email=$('#nte').value;NT.phone=$('#ntp').value;toggleAccess(NT.access,a,b);render()}
   else if(a=='etg'||a=='etc'){const ph=$('#etp')?.value;toggleAccess(D.teachers.find(t=>t.id==V.editT).access,a,b);render();if(ph!=null&&$('#etp'))$('#etp').value=ph}
   else if(a=='etedit'){V.editT=b.dataset.id;render()}
-  else if(a=='etdel'){const t=D.teachers.find(x=>x.id==b.dataset.id);if(!confirm(`¿Eliminar a ${t.name} (${t.email})? Ya no podrá entrar al panel. Las notas de sus cursos no se borran.`))return;
+  else if(a=='etdel'){const t=D.teachers.find(x=>x.id==b.dataset.id);if(!await ask({title:`¿Eliminar a ${esc(t.name)}?`,body:`${esc(t.email)} ya no podrá entrar al panel. Las notas de sus cursos no se borran.`,ok:'Sí, eliminar',danger:true}))return;
     await DB.deleteStaff(t.id);D.teachers=D.teachers.filter(x=>x.id!=t.id);V.editT=null;render();toast(`${t.name} fue eliminado. Ya puedes crearlo de nuevo con el correo correcto.`)}
   else if(a=='etdone'){const t=D.teachers.find(x=>x.id==V.editT),ph=($('#etp')?.value||'').trim();if(ph&&!waNum(ph)){toast('Revisa el celular: debe tener 10 números.');return}await DB.setAccess(t.id,t.access);if(ph!==(t.phone||'')){await DB.updateStaff(t.id,{phone:ph});t.phone=ph}V.editT=null;render();toast('Acceso actualizado.')}
   else if(a=='ntsave'){NT.name=$('#ntn').value.trim();NT.email=$('#nte').value.trim();NT.phone=$('#ntp').value.trim();
@@ -725,26 +885,40 @@ document.addEventListener('click',async e=>{
     if(n&&n!=c.name){await DB.updateCourse(c.id,{name:n});c.name=n}
     for(const t of D.teachers){const has=t.access.includes(c.id),want=ECT.includes(t.id);if(has!=want){t.access=want?[...t.access,c.id]:t.access.filter(i=>i!=c.id);await DB.setAccess(t.id,t.access)}}
     EC=null;render();toast('Curso actualizado.')}
-  else if(a=='ecdel'){const c=D.classes.find(x=>x.id==b.dataset.c);if(!confirm(`¿Eliminar el curso ${c.name} (${c.year})?`))return;
+  else if(a=='ecdel'){const c=D.classes.find(x=>x.id==b.dataset.c);if(!await ask({title:`¿Eliminar el curso ${esc(c.name)} (${c.year})?`,ok:'Sí, eliminar',danger:true}))return;
     await DB.deleteCourse(c.id);for(const t of D.teachers){if(t.access.includes(c.id)){t.access=t.access.filter(i=>i!=c.id);await DB.setAccess(t.id,t.access)}}
     D.classes=D.classes.filter(x=>x.id!=c.id);EC=null;render();toast('Curso eliminado.')}
   }catch(err){fail(err);render()}
+  finally{if(lock){BUSY=false;if(b.isConnected){b.disabled=false;b.removeAttribute('aria-busy')}}}
 });
+// Pone los apellidos al final: «Ramos Chacon Dulce Maria» → «Dulce Maria Ramos Chacon»
+function flipName(n){const w=String(n).trim().split(/\s+/);const k=w.length>=3?2:1;return [...w.slice(k),...w.slice(0,k)].join(' ')}
+// Motivo por el que un nombre leído parece raro (o '' si se ve bien)
+function doubt(name,k){const n=String(name||'').trim(),w=n.split(/\s+/).filter(Boolean);
+  if(!n||n=='Nueva Estudiante')return 'Escribe el nombre completo';
+  if(/[^A-Za-zÁÉÍÓÚÑÜáéíóúñü' -]/.test(n))return 'Tiene números o símbolos';
+  if(w.some(x=>x.length<=2&&!/^(de|la|y|da|do)$/i.test(x)))return 'Tiene letras sueltas';
+  if(w.length<3)return '¿Le falta un nombre o un apellido?';
+  if(w.length>6)return 'Parecen dos nombres juntos';
+  const sl=slug(n);if(Array.isArray(V.ocr)&&V.ocr.some((r,j)=>j!=k&&slug(r.name)==sl))return 'Está repetido en la lista';
+  if(C()&&C().students.some(s=>slug(s.name)==sl))return 'Ya tiene usuario en este curso';
+  return ''}
+// Ejecuta una acción del panel como si se tocara su botón
+function fire(a,id){const t=document.createElement('button');t.dataset.a=a;if(id)t.dataset.id=id;t.hidden=true;document.body.appendChild(t);t.click();setTimeout(()=>t.remove(),0)}
 function mkUser(name){const PART=/^(de|del|la|las|los|y|da|do|dos|van|von)$/i;const p=name.trim().split(/\s+/).filter((w,i)=>i==0||!PART.test(w));return{name:name.trim(),user:slug(p[0])+'.'+slug(p[p.length>2?p.length-2:p.length-1]||'').slice(0,3),pics:[0,1,2].map(()=>PICS[Math.floor(Math.random()*6)])}}
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id=='q'){V.q=t.value;const pos=t.selectionStart;render();const q=$('#q');q.focus();q.setSelectionRange(pos,pos)}
   else if(t.id=='obs'){const sid=t.dataset.id;D.notes[sid]=t.value;later('obs'+sid,()=>noteSave(sid),900)}
-  else if(t.dataset.ocr!=null){const k=+t.dataset.ocr;V.ocr[k]={...mkUser(t.value),pics:V.ocr[k].pics};t.closest('.orow').querySelector('code').textContent=V.ocr[k].user}
-  else if(t.dataset.sc){const v=parseFloat(t.value.replace(',','.'));if(v>=1&&v<=5){C().scale[t.dataset.sc]=v;const ex=$('#ex');if(ex)ex.textContent=f1((3*C().scale.p+C().scale.s+C().scale.a)/5);later('sc'+C().id,()=>DB.setScale(C().id,C().scale),700)}}
+  else if(t.dataset.ocr!=null){const k=+t.dataset.ocr;V.ocr[k]={...mkUser(t.value),pics:V.ocr[k].pics};const row=t.closest('.orow'),why=doubt(t.value,k);row.querySelector('code').textContent=V.ocr[k].user;row.classList.toggle('doubt',!!why);row.querySelector('.why').textContent=why?'⚠ '+why:''}
+  else if(t.dataset.sc){const v=parseFloat(t.value.replace(',','.'));if(!V.scd)V.scd={...C().scale};if(v>=1&&v<=5){V.scd[t.dataset.sc]=Math.round(v*10)/10;t.classList.remove('bad')}else t.classList.add('bad');scRefresh()}
 });
+document.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.id=='ovin'){e.preventDefault();$('[data-a=ovsave]')?.click()}});
 document.addEventListener('change',async e=>{
   const t=e.target;
   try{
   if(t.id=='sort'){V.sort=t.value;render()}
   else if(t.id=='ncg'||t.id=='ncy'){const prevAuto=NC.name===nextName(NC.grade,NC.year);NC.grade=+$('#ncg').value;NC.year=+$('#ncy').value;if(prevAuto||!$('#ncn').value.trim())NC.name=nextName(NC.grade,NC.year);else NC.name=$('#ncn').value;render()}
-  else if(t.dataset.ov){const v=parseFloat(t.value.replace(',','.'));if(t.value===''){delete D.overrides[t.dataset.ov]}else if(v>=1&&v<=5){D.overrides[t.dataset.ov]=Math.round(v*10)/10}else{toast('La nota debe estar entre 1,0 y 5,0.');return}render();await noteSave(t.dataset.ov.split('|')[0]);toast('Nota ajustada. La nota final se recalculó.')}
-  else if(t.dataset.sc)toast('Escala guardada. Las notas se recalcularon.');
   }catch(err){fail(err)}
 });
 
