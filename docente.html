@@ -496,18 +496,43 @@ function resumen(){
 }
 
 /* estudiantes */
+// Posibles estudiantes repetidas: mismo nombre, o mismo usuario con un número al final (ariana.lop / ariana.lop2).
+// El número lo pone Numi cuando ya existía una cuenta con ese usuario; si la niña entra con la otra, sus retos no salen aquí.
+function dupWarn(){
+  const c=C();if(!c||c.closed)return '';
+  const nk=x=>String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]+/g,'');
+  const base=u=>String(u||'').toLowerCase().replace(/\d+$/,'');
+  const all=D.classes.filter(x=>x.year==c.year).flatMap(x=>x.students.map(s=>({s,cl:x})));
+  const rows=[];
+  c.students.forEach(s=>{
+    const others=all.filter(o=>o.s.id!=s.id&&(nk(o.s.name)==nk(s.name)||base(o.s.user)==base(s.user)));
+    const info=o=>`${nRetos(o.s)} ${nRetos(o.s)==1?'reto':'retos'}`;
+    if(others.length){
+      // Cada pareja se muestra una sola vez (desde la que tiene el número al final o la de nombre posterior)
+      if(others.some(o=>o.cl==c&&(o.s.user.length<s.user.length||(o.s.user.length==s.user.length&&o.s.user<s.user))))return;
+      rows.push(`<div class="alert"><div><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code> · ${info({s})}. También está: ${others.map(o=>`<button class="link" data-a="stux" data-c="${D.classes.indexOf(o.cl)}" data-id="${o.s.id}">${esc(o.s.name)}</button> (<code>${esc(o.s.user)}</code>, ${o.cl.name}, ${info(o)})`).join(' · ')}</small></div></div>`);
+    }else if(/\d$/.test(s.user)&&!nRetos(s)){
+      rows.push(`<div class="alert"><div><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code> y todavía no ha jugado. Termina en número porque ya existía una cuenta <code>${esc(base(s.user))}</code> (quizá de un listado anterior o de otro curso). Si ella entra con <b>${esc(base(s.user))}</b>, sus retos no aparecen aquí: dale la tarjeta con <b>${esc(s.user)}</b>.</small></div></div>`);
+    }
+  });
+  if(!rows.length)return '';
+  return `<section class="card" style="background:#fff7dc;border-color:#f2b01e;margin:var(--s2) 0"><h3>⚠ Revisa: ${rows.length==1?'posible estudiante repetida':'posibles estudiantes repetidas'}</h3><p class="muted" style="font-size:14px;margin:4px 0 var(--s2)">Puede que una niña tenga dos usuarios y juegue con el otro. Deja la ficha que tiene los retos y elimina la vacía con los tres puntitos <b>⋮</b>. Si son dos niñas distintas con nombre parecido, no tienes que hacer nada.</p>${rows.join('')}</section>`;
+}
 function estudiantes(){
-  let st=C().students.filter(s=>slug(s.name).includes(slug(V.q)));
+  const k=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,''),q=k(V.q);
+  let st=C().students.filter(s=>!q||k(s.name).includes(q)||k(s.user).includes(q));
+  const dup=dupWarn();
   const sorters={name:(a,b)=>a.name.localeCompare(b.name,'es'),nota:(a,b)=>(finalNota(a)??-1)-(finalNota(b)??-1),notaD:(a,b)=>(finalNota(b)??-1)-(finalNota(a)??-1),last:(a,b)=>(last(b)||0)-(last(a)||0)};
   st=[...st].sort(sorters[V.sort]);
-  return `<div class="tools"><input id="q" placeholder="Buscar estudiante" value="${esc(V.q)}" aria-label="Buscar estudiante"><select id="sort" aria-label="Ordenar">
+  return `<div class="tools"><input id="q" placeholder="Buscar por nombre o usuario" value="${esc(V.q)}" aria-label="Buscar estudiante por nombre o usuario"><select id="sort" aria-label="Ordenar">
   ${[['name','Orden alfabético'],['notaD','Nota: mayor a menor'],['nota','Nota: menor a mayor'],['last','Último ingreso']].map(([k,n])=>`<option value="${k}" ${V.sort==k?'selected':''}>${n}</option>`).join('')}</select></div>
   ${st.some(x=>nRetos(x))?`<div class="legend-mini"><span><i style="background:var(--teal)"></i>A la primera</span><span><i style="background:var(--gold)"></i>Con error</span><span><i style="background:var(--coral)"></i>Con ayuda</span></div>`:''}
+  ${dup}
   <div class="slist">${st.map(s=>{const c=counts(s),n=finalNota(s),d=desemp(n),l=last(s);
     const bar=c.t?`<span class="sc-bar" aria-label="${pct(c.p/c.t)} a la primera, ${pct((c.s+c.m)/c.t)} con error, ${pct(c.a/c.t)} con ayuda"><i style="width:${c.p/c.t*100}%;background:var(--teal)"></i><i style="width:${(c.s+c.m)/c.t*100}%;background:var(--gold)"></i><i style="width:${c.a/c.t*100}%;background:var(--coral)"></i></span>`:'';
-    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av sc-av">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>${l?`${ago(l)} · ${nRetos(s)} ${nRetos(s)==1?'reto':'retos'}`:'Todavía no ha jugado'}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
+    return `<div class="scard"><button class="scard-main" data-a="stu" data-id="${s.id}"><i class="av sc-av">${ini(s.name)}</i><span class="sc-txt"><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code> · ${l?`${ago(l)} · ${nRetos(s)} ${nRetos(s)==1?'reto':'retos'}`:'Todavía no ha jugado'}</small>${bar}</span><span class="sc-nota">${n!=null?`<b>${f1(n)}</b><span class="pill ${d[1]}">${d[0]}</span>`:'<span class="pill p-n">Sin nota</span>'}</span></button><button class="dots" data-a="stumenu" data-id="${s.id}" aria-label="Opciones de ${esc(s.name)}">⋮</button></div>`}).join('')}</div>
   ${st.length?'<p class="muted" style="font-size:14px;margin-top:var(--s2)">Toca a una estudiante para ver sus notas. Con los tres puntitos <b>⋮</b> puedes cambiar su clave o eliminarla si se retiró.</p>':''}
-  ${st.length?'':'<p class="muted" style="margin-top:var(--s3)">No hay estudiantes con ese nombre.</p>'}`;
+  ${st.length?'':'<p class="muted" style="margin-top:var(--s3)">No hay estudiantes con ese nombre o usuario.</p>'}`;
 }
 
 /* detalle de estudiante */
@@ -862,6 +887,7 @@ document.addEventListener('click',async e=>{
   else if(a=='cls'){V.cls=+b.dataset.i;V.screen='salon';V.tab='resumen';V.ocr=null;render();scrollTo(0,0)}
   else if(a=='tab'){V.tab=b.dataset.t;render();$('.tabs')?.scrollIntoView({block:'nearest'})}
   else if(a=='tabback'){V.screen='salon';V.tab='estudiantes';render();scrollTo(0,0)}
+  else if(a=='stux'){V.cls=+b.dataset.c;V.student=b.dataset.id;V.screen='student';render();scrollTo(0,0)}
   else if(a=='stu'){V.student=b.dataset.id;V.screen='student';render();scrollTo(0,0)}
   else if(a=='atab'){V.atab=b.dataset.t;V.editT=null;EC=null;render()}
   else if(a=='copyall')copyAll();
