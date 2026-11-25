@@ -142,12 +142,6 @@ tr.click{cursor:pointer}tr.click:hover td{background:light-dark(#fdf7fa,#2c2346)
 .ucard{border:2px dashed var(--muted);border-radius:16px;padding:var(--s2) var(--s3);background:var(--card);display:grid;gap:4px}
 .ucard b{font-family:Fredoka,sans-serif;font-size:18px}.ucard code{font-size:15px;font-weight:700;color:var(--coral)}
 .ucard .pic svg{width:34px;height:34px}
-.phone{width:260px;max-width:100%;margin:0 auto;border:8px solid var(--ink);border-radius:34px;padding:var(--s3);background:#fff8ee;color:#2b1d3a;display:grid;gap:var(--s2);text-align:center}
-.phone input{background:#fff;border-color:#f0dbe1;color:#2b1d3a}
-.picks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.picks span{background:#fff;border:2px solid #f0dbe1;border-radius:14px;padding:8px;display:grid;place-items:center}
-.picks span.on{border-color:#e9456f;background:#ffeef2}
-.picks svg{width:32px;height:32px}
 /* config */
 .scale{display:grid;gap:var(--s2)}
 .srow{display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:var(--s2);align-items:center;padding:10px 0;border-top:1px solid var(--line)}
@@ -585,17 +579,14 @@ function usuarios(){
   else if(V.ocr==='paste')ocr=`<section class="card"><h3>Escribe o pega la lista</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s2)">Un nombre por línea.</p><textarea id="plist" style="min-height:180px" placeholder="Valentina Restrepo Gómez&#10;Sofía Zapata Arango"></textarea><div class="tools" style="margin-top:var(--s2)"><button class="btn" data-a="pasteok">Revisar lista</button><button class="btn ghost" data-a="ocrcancel">Cancelar</button></div></section>`;
   else if(V.ocr&&V.ocr.saving)ocr=`<div class="drop"><div class="spin"></div><b>Creando usuarios… ${V.ocr.done} de ${V.ocr.total}</b><span class="muted">No cierres esta página.</span></div>`;
   else ocr=`<div class="drop">${'<svg viewBox="0 0 24 24"><use href="#i-cam"/></svg>'}<b>Toma o sube una foto de la lista del salón</b><span class="muted">Numi lee los nombres y crea un usuario y una clave para cada niña.</span><span class="tools"><button class="btn" data-a="phcam">Tomar foto</button><button class="btn ghost" data-a="phgal">Elegir de la galería</button></span></div><p style="text-align:center"><button class="link" data-a="paste">O escribe / pega la lista de nombres</button></p>`;
-  return `<div class="grid g2"><div class="grid">${ocr}
+  return `<div class="grid" style="max-width:760px">${ocr}
   <section class="card"><h3>Tarjetas de ingreso de ${c.name}</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Imprímelas y entrega a cada niña la suya.</p>
   ${c.students.length?'':'<p class="muted">Cuando crees las estudiantes, aquí aparecen sus tarjetas.</p>'}<div class="cards">${c.students.slice(0,6).map(s=>`<div class="ucard"><b>${esc(s.name)}</b><span class="muted" style="font-size:13px">Usuario</span><code>${s.user}</code><span class="muted" style="font-size:13px">Clave</span><span class="pic">${s.pics.map(pic).join('')}</span></div>`).join('')}</div>
   <div class="tools" style="margin-top:var(--s3)"><button class="btn" data-a="print" ${c.students.length?'':'disabled'}>Imprimir las ${c.students.length} tarjetas</button></div></section>
   <section class="card"><details><summary style="font-family:Fredoka,sans-serif;font-size:20px;color:var(--ink)">Estudiantes con usuario (${c.students.length})</summary><div class="ulist">${c.students.map(s=>`<div class="urow"><div class="u-txt"><b>${esc(s.name)}</b><small>Usuario <code>${esc(s.user)}</code></small></div><span class="pic">${s.pics.map(pic).join('')}</span><div class="u-act"><button class="link" data-a="reset" data-id="${s.id}">Cambiar clave</button>${C().closed?'':`<button class="link" data-a="delst" data-id="${s.id}" style="color:var(--muted)">Eliminar</button>`}</div></div>`).join('')}</div>
   ${!c.closed&&c.students.length&&!canWipe(c)?`<p class="muted" style="font-size:13px;margin-top:var(--s3)">El listado completo ya no se puede borrar porque algunas estudiantes ya entraron o tienen notas. Puedes eliminarlas una por una con <b>Eliminar</b>.</p>`:''}</details></section>
   ${!c.closed&&c.students.length&&canWipe(c)&&!Array.isArray(V.ocr)?`<section class="card"><h3>¿Te equivocaste de listado?</h3><p class="muted" style="font-size:14px;margin:4px 0 var(--s2)">Como ninguna estudiante ha entrado ni tiene notas, puedes borrar todo el listado y volver a subir la foto correcta.</p><button class="btn ghost" style="color:var(--coral)" data-a="wipe">Eliminar las ${c.students.length} estudiantes</button></section>`:''}</div>
-  <section class="card" style="align-self:start"><h3>Así entra la niña</h3><p class="muted" style="font-size:14px;margin:-4px 0 var(--s3)">Escribe su usuario y toca sus 3 dibujitos en orden. Es más fácil que una contraseña a esta edad.</p>
-  <div class="phone"><svg viewBox="0 0 120 120" style="width:80px;margin:0 auto"><use href="#numi"/></svg><b style="font-family:Fredoka;font-size:22px">¡Hola! ¿Quién eres?</b><input value="${c.students[0]?.user||'valentina.res'}" aria-label="Usuario de ejemplo" readonly>
-  <span style="font-weight:700;font-size:14px">Toca tus 3 dibujitos</span><div class="picks">${PICS.map(k=>`<span class="${(c.students[0]?.pics||['estrella','luna','flor']).includes(k)?'on':''}">${pic(k)}</span>`).join('')}</div>
-  <span style="background:#e9456f;color:#fff;border-radius:14px;padding:10px;font-weight:800">Entrar</span></div></section></div>`;
+`;
 }
 
 /* configuración */
